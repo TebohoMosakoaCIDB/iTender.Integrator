@@ -12,7 +12,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Integrations\Ocds\Models\" />
     <Folder Include="Persistence\" />
     <Folder Include="Services\" />
   </ItemGroup>
