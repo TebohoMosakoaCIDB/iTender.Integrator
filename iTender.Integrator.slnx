@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="iTender.Integrator.Api/iTender.Integrator.Api.csproj" />
+  <Project Path="iTender.Integrator.Application/iTender.Integrator.Application.csproj" />
+  <Project Path="iTender.Integrator.Domain/iTender.Integrator.Domain.csproj" />
+  <Project Path="iTender.Integrator.Infrastructure/iTender.Integrator.Infrastructure.csproj" />
+</Solution>
