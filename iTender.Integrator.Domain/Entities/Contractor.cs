@@ -48,6 +48,38 @@ namespace iTender.Integrator.Domain.Entities
             };
         }
 
+        // Reconstructs a Contractor from persisted state (e.g. a Dataverse record), preserving
+        // its existing Id. Only repositories should call this - application/domain code that
+        // wants a brand new contractor must use Register() so a fresh Id is minted.
+        public static Contractor Rehydrate(
+            Guid id,
+            string cidbRegistrationNumber,
+            string name,
+            Guid? dynamicsAccountId,
+            string? lastMatchedOcdsPartyId,
+            CidbComplianceStatus complianceStatus,
+            DateTime? lastComplianceCheckUtc,
+            DateTime? lastSyncedWithCrmUtc,
+            IEnumerable<CidbGrading> gradings)
+        {
+            var contractor = new Contractor
+            {
+                Id = id,
+                CidbRegistrationNumber = cidbRegistrationNumber,
+                Name = name,
+                DynamicsAccountId = dynamicsAccountId,
+                LastMatchedOcdsPartyId = lastMatchedOcdsPartyId,
+                ComplianceStatus = complianceStatus,
+                LastComplianceCheckUtc = lastComplianceCheckUtc,
+                LastSyncedWithCrmUtc = lastSyncedWithCrmUtc
+            };
+
+            foreach (var grading in gradings)
+                contractor.AddGrading(grading);
+
+            return contractor;
+        }
+
         public void LinkToDynamicsAccount(Guid dynamicsAccountId)
         {
             DynamicsAccountId = dynamicsAccountId;
@@ -68,8 +100,6 @@ namespace iTender.Integrator.Domain.Entities
                 .OrderByDescending(g => g.PotentialGrade)
                 .FirstOrDefault();
 
-        // Point #2 - a contractor is eligible for a class of work only if they hold an
-        // unexpired grading at or above the required grade.
         public bool IsEligibleFor(string classOfWork, int requiredGrade, DateTime asOfUtc)
         {
             var grading = _gradings.FirstOrDefault(g => g.ClassOfWork.Equals(classOfWork, StringComparison.OrdinalIgnoreCase));
