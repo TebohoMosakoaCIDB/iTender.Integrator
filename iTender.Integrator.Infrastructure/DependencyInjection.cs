@@ -1,7 +1,6 @@
 ﻿using iTender.Integrator.Application.Interfaces;
 using iTender.Integrator.Infrastructure.Integrations.CRM;
 using iTender.Integrator.Infrastructure.Integrations.Ocds;
-using iTender.Integrator.Infrastructure.Repositories;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -39,7 +38,6 @@ namespace iTender.Integrator.Infrastructure
 
             services.AddScoped<ICrmServiceFactory, CrmServiceFactory>();
 
-            services.AddScoped<IContractorRepository, ContractorRepository>();
             //services.AddScoped<IContractorGradeRepository, ContractorGradeRepository>();
 
             return services;
