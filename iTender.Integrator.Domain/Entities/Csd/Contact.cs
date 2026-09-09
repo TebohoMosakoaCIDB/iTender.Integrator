@@ -1,9 +1,13 @@
-﻿namespace iTender.Integrator.Domain.Entities.Csd
+﻿using System.Xml.Serialization;
+
+namespace iTender.Integrator.Domain.Entities.Csd
 {
     public class Contact
     {
         public int ContactID { get; set; }
 
+        [XmlArray("ContactTypes")]
+        [XmlArrayItem("ContactType")]
         public List<ContactType> ContactTypes { get; set; } = [];
 
         public bool IsPreferred { get; set; }

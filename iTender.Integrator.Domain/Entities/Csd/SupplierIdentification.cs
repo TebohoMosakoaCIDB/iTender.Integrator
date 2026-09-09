@@ -1,6 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using System.Xml.Serialization;
 
 namespace iTender.Integrator.Domain.Entities.Csd
 {
@@ -44,6 +42,8 @@ namespace iTender.Integrator.Domain.Entities.Csd
         public string? Field3 { get; set; }
         public DateTime? CreatedDate { get; set; }
         public DateTime? EditDate { get; set; }
+        [XmlArray("SupplierFlags")]
+        [XmlArrayItem("SupplierFlag")]
         public List<SupplierFlag> SupplierFlags { get; set; } = [];
     }
 }

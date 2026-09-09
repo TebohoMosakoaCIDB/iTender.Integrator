@@ -14,8 +14,6 @@
   <ItemGroup>
     <Folder Include="Persistence\" />
     <Folder Include="Providers\" />
-    <Folder Include="Repositories\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
   <ItemGroup>

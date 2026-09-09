@@ -11,6 +11,7 @@
         public string? CrsNumber { get; set; }
         public string? Email { get; set; }
         public string? Phone { get; set; }
+        public bool IsSanctioned { get; set; }
         public bool PreviouslySanctioned { get; set; }
         public bool IsPotentiallyEmerging { get; set; }
         public bool IsMoratorium { get; set; }

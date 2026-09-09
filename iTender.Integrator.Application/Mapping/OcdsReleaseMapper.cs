@@ -138,6 +138,8 @@ namespace iTender.Integrator.Application.Mapping
                 name: dto.Name ?? string.Empty,
                 roles: roles,
                 legalName: dto.Identifier?.LegalName,
+                registrationScheme: dto.Identifier?.Scheme,
+                registrationNumber: dto.Identifier?.Id,
                 address: address,
                 contactPoint: contactPoint);
         }

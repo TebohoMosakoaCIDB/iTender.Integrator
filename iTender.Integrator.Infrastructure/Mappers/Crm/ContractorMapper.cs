@@ -62,6 +62,8 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
 
                 BBBEEstatusText = ((BBBEEStatus)Convert.ToInt32(GetOptionSetText(entity, ContractorFields.BBBEEEStatus))).ToString(),
 
+                IsSanctioned = GetBool(entity, ContractorFields.IsSanctioned),
+
                 PreviouslySanctioned = GetBool(entity, ContractorFields.PreviouslySanctioned),
 
                 IsMoratorium = GetBool(entity, ContractorFields.Moratorium),

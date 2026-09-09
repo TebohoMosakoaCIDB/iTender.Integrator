@@ -1,4 +1,6 @@
-﻿namespace iTender.Integrator.Domain.Entities.Csd
+﻿using System.Xml.Serialization;
+
+namespace iTender.Integrator.Domain.Entities.Csd
 {
     public class Director
     {
@@ -28,22 +30,33 @@
 
         public DateTime? LastVerificationDate { get; set; }
 
+        [XmlArray("DirectorTypes")]
+        [XmlArrayItem("DirectorType")]
         public List<DirectorType> DirectorTypes { get; set; } = [];
 
+        [XmlElement("IsOwner")]
         public bool IsOwner { get; set; }
 
+        [XmlElement("CellphoneNumber")]
         public string? CellphoneNumber { get; set; }
 
+        [XmlElement("EmailAddress")]
         public string? EmailAddress { get; set; }
 
+        [XmlElement("GenderCode")]
         public string? GenderCode { get; set; }
 
+        [XmlElement("EthnicGroupCode")]
         public string? EthnicGroupCode { get; set; }
 
+        [XmlElement("OwnershipPercentage")]
         public decimal OwnershipPercentage { get; set; }
 
-        public string? OwnershipDemographics { get; set; }
+        [XmlElement("OwnershipDemographics")]
+        public OwnershipDemographics? OwnershipDemographics { get; set; }
 
+        [XmlArray("DirectorFlags")]
+        [XmlArrayItem("DirectorFlag")]
         public List<DirectorFlag> DirectorFlags { get; set; } = [];
 
         public string? Field1 { get; set; }

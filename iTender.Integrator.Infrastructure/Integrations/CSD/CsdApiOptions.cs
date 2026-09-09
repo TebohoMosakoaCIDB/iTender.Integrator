@@ -17,5 +17,6 @@
         public string Password { get; set; } = string.Empty;
 
         public int TimeoutSeconds { get; set; } = 60;
+        public string CidbAccreditationBodyCode { get; set; } = "CIDB";
     }
 }
