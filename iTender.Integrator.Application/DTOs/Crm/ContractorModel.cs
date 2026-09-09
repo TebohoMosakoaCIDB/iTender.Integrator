@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace iTender.Integrator.Application.DTOs.Crm
+﻿namespace iTender.Integrator.Application.DTOs.Crm
 {
     public class ContractorModel
     {
