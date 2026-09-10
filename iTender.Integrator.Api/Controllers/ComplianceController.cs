@@ -22,7 +22,7 @@ namespace iTender.Integrator.Api.Controllers
         // the release-ingestion pipeline. registrationScheme defaults to ZA-CSD but
         // isn't currently used for anything beyond the resulting Party record, since
         // both CSD and CRM are keyed by the CSD number regardless of scheme label.
-        [HttpGet("suppliers/{registrationNumber}")]
+        [HttpGet("suppliers/{MAAANumber}")]
         public async Task<IActionResult> CheckSupplier(
             string registrationNumber,
             [FromQuery] string registrationScheme = "ZA-CSD",

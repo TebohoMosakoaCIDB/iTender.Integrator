@@ -12,17 +12,20 @@ namespace iTender.Integrator.Infrastructure.Services
         private readonly IContractorComplianceService _contractorComplianceService;
         private readonly ITenderRepository _tenderRepository;
         private readonly IProvinceRepository _provinceRepository;
+        private readonly IMetroDistrictRepository _metroDistrictRepository;
         private readonly ILogger<ReleaseComplianceService> _logger;
 
         public ReleaseComplianceService(
             IContractorComplianceService contractorComplianceService,
             ITenderRepository tenderRepository,
             IProvinceRepository provinceRepository,
+            IMetroDistrictRepository metroDistrictRepository,
             ILogger<ReleaseComplianceService> logger)
         {
             _contractorComplianceService = contractorComplianceService;
             _tenderRepository = tenderRepository;
             _provinceRepository = provinceRepository;
+            _metroDistrictRepository = metroDistrictRepository;
             _logger = logger;
         }
 
@@ -57,6 +60,45 @@ namespace iTender.Integrator.Infrastructure.Services
             }
         }
 
+        // Best-effort only, unlike province: OCDS gives us tender.deliveryLocation as
+        // one free-text address string (e.g. "87 Hamilton Street - Arcadia -
+        // PRETORIA - 0083"), not a clean municipality name. This does a substring
+        // match of each candidate metro/district's name against that address,
+        // scoped to the resolved province where we have one (there can be several
+        // districts with similar-sounding names across provinces). Any match found
+        // this way should be treated as a suggestion, not a certainty - it's logged
+        // at Information level specifically so it's easy to audit/spot-check, unlike
+        // the province match which is a confident exact match.
+        private async Task<Guid?> ResolveMetroDistrictIdAsync(
+            string? deliveryLocation, Guid? provinceId, CancellationToken cancellationToken)
+        {
+            if (string.IsNullOrWhiteSpace(deliveryLocation) || provinceId is null)
+                return null;
+
+            try
+            {
+                var candidates = await _metroDistrictRepository.GetByProvinceAsync(provinceId.Value, cancellationToken);
+
+                var match = candidates.FirstOrDefault(m =>
+                    !string.IsNullOrWhiteSpace(m.Name) &&
+                    deliveryLocation.Contains(m.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (match is not null)
+                {
+                    _logger.LogInformation(
+                        "Best-effort metro/district match: '{MetroName}' found in deliveryLocation '{DeliveryLocation}'. Treat as a suggestion, not a certainty.",
+                        match.Name, deliveryLocation);
+                }
+
+                return match?.Id;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Metro/district lookup failed for '{DeliveryLocation}'.", deliveryLocation);
+                return null;
+            }
+        }
+
         public async Task<ReleaseComplianceView> EnrichAsync(
             OcdsReleaseDto releaseDto, CancellationToken cancellationToken = default)
         {
@@ -84,6 +126,26 @@ namespace iTender.Integrator.Infrastructure.Services
                     PublishedToCrm: false,
                     CrmTenderId: null,
                     PublishReason: "Release could not be mapped to the domain model - see logs.");
+            }
+
+            if (release.Tender is not null && !release.Tender.IsConstructionRelated)
+            {
+                _logger.LogInformation(
+                    "Skipping release {Ocid}/{ReleaseId} - not construction-related (mainProcurementCategory='{Category}').",
+                    release.Ocid, release.ReleaseId, release.Tender.MainProcurementCategory);
+
+                return new ReleaseComplianceView(
+                    release.Ocid,
+                    release.ReleaseId,
+                    release.Tender.ExternalId,
+                    release.Tender.Title,
+                    release.Tender.Status.ToString(),
+                    Array.Empty<PartyComplianceView>(),
+                    PublishedToCrm: false,
+                    CrmTenderId: null,
+                    PublishReason: $"Skipped - not a construction tender " +
+                        $"(mainProcurementCategory='{release.Tender.MainProcurementCategory}'). " +
+                        "No CSD/CRM compliance checks were run and nothing was published.");
             }
 
             var candidates = release.GetContractorCandidateParties().ToList();
@@ -143,7 +205,9 @@ namespace iTender.Integrator.Infrastructure.Services
                 try
                 {
                     var provinceId = await ResolveProvinceIdAsync(release.Tender.Province, cancellationToken);
-                    var createModel = TenderMapper.ToCreateTenderModel(release, provinceId);
+                    var metroDistrictId = await ResolveMetroDistrictIdAsync(
+                        release.Tender.DeliveryLocation, provinceId, cancellationToken);
+                    var createModel = TenderMapper.ToCreateTenderModel(release, provinceId, metroDistrictId);
                     crmTenderId = await _tenderRepository.UpsertAsync(createModel, cancellationToken);
                     publishedToCrm = true;
                     publishReason = "Published to CRM.";

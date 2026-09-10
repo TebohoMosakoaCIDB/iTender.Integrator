@@ -68,6 +68,10 @@ namespace iTender.Integrator.Infrastructure
 
             services.AddScoped<IProvinceRepository, ProvinceRepository>();
 
+            services.AddScoped<IMetroDistrictRepository, MetroDistrictRepository>();
+
+            services.AddScoped<IClassOfWorkTypeRepository, ClassOfWorkTypeRepository>();
+
             return services;
         }
     }

@@ -25,7 +25,7 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
         // "description" (e.g. "PROCUREMENT OF DEVELOPMENT AND ANALYSIS TRAINING
         // COURSE."). CreateTenderModel.Title/Name are mapped from Description
         // accordingly - the reverse of what this used to do.
-        public static CreateTenderModel ToCreateTenderModel(Release release, Guid? provinceId = null)
+        public static CreateTenderModel ToCreateTenderModel(Release release, Guid? provinceId = null, Guid? metroDistrictId = null)
         {
             if (release is null) throw new ArgumentNullException(nameof(release));
             if (release.Tender is null)
@@ -51,7 +51,8 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
                     Line1 = tender.DeliveryLocation,
                     Province = tender.Province
                 },
-                ProvinceId = provinceId
+                ProvinceId = provinceId,
+                MetroDistrictId = metroDistrictId
             };
 
             if (tender.ContactPerson is not null)
@@ -74,13 +75,14 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
                 model.ClarificationMeetingDateAndTime = briefing.Date;
             }
 
-            // Deliberately left null: ProvinceId, MetroDistrictId, LocalMunicipalityId,
-            // ClassOfConstructionWorksId, SubCategoryId, TenderValueRangeId,
-            // EmployerId. These are all Dataverse lookup references (Guids into
-            // nv_province / nv_classofworktype / etc), and OCDS gives us free-text
-            // (tender.Province, tender.Category) rather than those record ids. Writing
-            // a wrong guess here is worse than leaving it blank - needs a name-to-id
-            // lookup against those reference entities, which isn't built yet.
+            // Deliberately left null: LocalMunicipalityId, ClassOfConstructionWorksId,
+            // SubCategoryId, TenderValueRangeId, EmployerId. ProvinceId and
+            // MetroDistrictId are now resolved by the caller (ReleaseComplianceService,
+            // via IProvinceRepository/IMetroDistrictRepository) and passed in above.
+            // The remaining ones still have no reliable OCDS-side signal to resolve
+            // from - ClassOfConstructionWorksId in particular has no automated path at
+            // all (see IClassOfWorkTypeRepository's doc comment). Writing a wrong guess
+            // is worse than leaving it blank.
 
             return model;
         }
@@ -103,6 +105,10 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
 
             if (model.ProvinceId.HasValue)
                 entity[TenderFields.ProvinceId] = new EntityReference(CrmEntityNames.Province, model.ProvinceId.Value);
+
+            if (model.MetroDistrictId.HasValue)
+                entity[TenderFields.MetroDistrictId] =
+                    new EntityReference(CrmEntityNames.MetroDistrict, model.MetroDistrictId.Value);
 
             if (model.Status.HasValue)
             {

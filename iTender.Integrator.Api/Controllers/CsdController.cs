@@ -15,7 +15,7 @@ namespace iTender.Integrator.Api.Controllers
             _csdApiClient = csdApiClient;
         }
 
-        [HttpGet("suppliers/{supplierNumber}")]
+        [HttpGet("suppliers/{MAAANumber}")]
         public async Task<IActionResult> GetSupplier(
             string supplierNumber,
             CancellationToken cancellationToken)

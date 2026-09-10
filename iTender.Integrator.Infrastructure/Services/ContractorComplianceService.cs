@@ -111,7 +111,7 @@ namespace iTender.Integrator.Infrastructure.Services
                 return Result(
                     party,
                     CidbComplianceStatus.RegistrationNotFound,
-                    $"Supplier '{registrationNumber}' is active on CSD but has no matching CIDB contractor record in CRM.",
+                    $"Supplier '{registrationNumber}' is active on CSD but has no matching CIDB contractor record on iTender.",
                     csdFound: true,
                     crmFound: false,
                     checkedAtUtc);
@@ -122,7 +122,7 @@ namespace iTender.Integrator.Infrastructure.Services
                 return Result(
                     party,
                     CidbComplianceStatus.NonCompliant,
-                    $"Contractor '{registrationNumber}' is currently sanctioned in CRM.",
+                    $"Contractor '{registrationNumber}' is currently sanctioned on iTender.",
                     csdFound: true,
                     crmFound: true,
                     checkedAtUtc);
@@ -133,7 +133,7 @@ namespace iTender.Integrator.Infrastructure.Services
                 return Result(
                     party,
                     CidbComplianceStatus.RegistrationSuspended,
-                    $"Contractor '{registrationNumber}' is under a CIDB moratorium in CRM.",
+                    $"Contractor '{registrationNumber}' is under a CIDB moratorium on iTender.",
                     csdFound: true,
                     crmFound: true,
                     checkedAtUtc);
@@ -144,7 +144,7 @@ namespace iTender.Integrator.Infrastructure.Services
                 return Result(
                     party,
                     CidbComplianceStatus.GradingInsufficient,
-                    $"Contractor '{registrationNumber}' has no current grading designation on file in CRM.",
+                    $"Contractor '{registrationNumber}' has no current grading designation on file on iTender.",
                     csdFound: true,
                     crmFound: true,
                     checkedAtUtc);
