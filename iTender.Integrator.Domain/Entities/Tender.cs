@@ -16,6 +16,9 @@ namespace iTender.Integrator.Domain.Entities
 
         public string? MainProcurementCategory { get; private set; }
 
+        private readonly List<string> _additionalProcurementCategories = new();
+        public IReadOnlyCollection<string> AdditionalProcurementCategories => _additionalProcurementCategories.AsReadOnly();
+
         public string? Description { get; private set; }
 
         public string? Province { get; private set; }
@@ -116,6 +119,26 @@ namespace iTender.Integrator.Domain.Entities
         }
 
         public void SetEligibilityCriteria(string? criteria) => EligibilityCriteria = criteria;
+
+        public void SetAdditionalProcurementCategories(IEnumerable<string>? categories)
+        {
+            _additionalProcurementCategories.Clear();
+            if (categories is null) return;
+
+            foreach (var category in categories)
+                if (!string.IsNullOrWhiteSpace(category))
+                    _additionalProcurementCategories.Add(category);
+        }
+
+        // OCDS's standard taxonomy for mainProcurementCategory is exactly three
+        // values: "goods", "works", "services". cidb's mandate is construction, which
+        // in that taxonomy is "works" - so this is a standards-based signal, not a
+        // guessed keyword list. tender.Category (free text, e.g. "Education",
+        // "Information service activities") is NOT used here since it varies by
+        // procuring entity and isn't a reliable filter.
+        public bool IsConstructionRelated =>
+            string.Equals(MainProcurementCategory, "works", StringComparison.OrdinalIgnoreCase)
+            || _additionalProcurementCategories.Any(c => string.Equals(c, "works", StringComparison.OrdinalIgnoreCase));
 
         public void SetContactPerson(ContactPoint? contactPerson) => ContactPerson = contactPerson;
 

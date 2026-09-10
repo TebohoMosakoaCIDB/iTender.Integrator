@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace iTender.Integrator.Domain.Constants
+﻿namespace iTender.Integrator.Domain.Constants
 {
     public class CrmFieldNames
     {
@@ -329,6 +325,7 @@ namespace iTender.Integrator.Domain.Constants
         {
             public const string Id = "nv_provinceid";
             public const string Name = "nv_name";
+            public const string SourceId = "nv_province_sourceid";
         }
 
         public static class OwnershipFields

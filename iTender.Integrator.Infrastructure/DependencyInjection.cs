@@ -62,6 +62,12 @@ namespace iTender.Integrator.Infrastructure
 
             services.AddScoped<IContractorComplianceService, ContractorComplianceService>();
 
+            services.AddScoped<IReleaseComplianceService, ReleaseComplianceService>();
+
+            services.AddScoped<ITenderRepository, TenderRepository>();
+
+            services.AddScoped<IProvinceRepository, ProvinceRepository>();
+
             return services;
         }
     }

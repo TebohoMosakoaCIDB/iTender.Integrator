@@ -16,8 +16,7 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
             entity[CrmFieldNames.ContractorFields.CrsNumber] = domain.CrsNumber;
 
 
-            //if (domain.IsPotentiallyEmerging.HasValue)
-            //    entity[CrmFieldNames.ContractorFields.PotentiallyEmerging] = domain.IsPotentiallyEmerging.Value;
+            entity[CrmFieldNames.ContractorFields.PotentiallyEmerging] = domain.IsPotentiallyEmerging;
 
             entity[CrmFieldNames.ContractorFields.EnterpriseRegistrationNumber] =
                 domain.EnterpriseRegistrationNumber;

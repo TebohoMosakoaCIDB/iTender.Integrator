@@ -58,6 +58,7 @@ namespace iTender.Integrator.Application.Mapping
             tender.SetProcurementMethod(dto.ProcurementMethod, dto.ProcurementMethodDetails);
             tender.SetPeriods(MapPeriod(dto.EnquiryPeriod), MapPeriod(dto.AwardPeriod));
             tender.SetEligibilityCriteria(dto.EligibilityCriteria);
+            tender.SetAdditionalProcurementCategories(dto.AdditionalProcurementCategories);
 
             if (dto.ContactPerson is not null)
             {
