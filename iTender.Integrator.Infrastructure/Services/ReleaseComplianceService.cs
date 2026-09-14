@@ -13,6 +13,8 @@ namespace iTender.Integrator.Infrastructure.Services
         private readonly ITenderRepository _tenderRepository;
         private readonly IProvinceRepository _provinceRepository;
         private readonly IMetroDistrictRepository _metroDistrictRepository;
+        private readonly IClassOfWorkTypeRepository _classOfWorkTypeRepository;
+        private readonly IReleaseRepository _releaseRepository;
         private readonly ILogger<ReleaseComplianceService> _logger;
 
         public ReleaseComplianceService(
@@ -20,19 +22,19 @@ namespace iTender.Integrator.Infrastructure.Services
             ITenderRepository tenderRepository,
             IProvinceRepository provinceRepository,
             IMetroDistrictRepository metroDistrictRepository,
+            IClassOfWorkTypeRepository classOfWorkTypeRepository,
+            IReleaseRepository releaseRepository,
             ILogger<ReleaseComplianceService> logger)
         {
             _contractorComplianceService = contractorComplianceService;
             _tenderRepository = tenderRepository;
             _provinceRepository = provinceRepository;
             _metroDistrictRepository = metroDistrictRepository;
+            _classOfWorkTypeRepository = classOfWorkTypeRepository;
+            _releaseRepository = releaseRepository;
             _logger = logger;
         }
 
-        // "National" is not a real province - per instruction, it (and any name that
-        // doesn't match a CRM province record) resolves to null rather than guessed
-        // at. A failed CRM lookup here also falls back to null rather than failing
-        // the whole publish - a missing province shouldn't block the tender existing.
         private async Task<Guid?> ResolveProvinceIdAsync(string? provinceName, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(provinceName))
@@ -60,17 +62,7 @@ namespace iTender.Integrator.Infrastructure.Services
             }
         }
 
-        // Best-effort only, unlike province: OCDS gives us tender.deliveryLocation as
-        // one free-text address string (e.g. "87 Hamilton Street - Arcadia -
-        // PRETORIA - 0083"), not a clean municipality name. This does a substring
-        // match of each candidate metro/district's name against that address,
-        // scoped to the resolved province where we have one (there can be several
-        // districts with similar-sounding names across provinces). Any match found
-        // this way should be treated as a suggestion, not a certainty - it's logged
-        // at Information level specifically so it's easy to audit/spot-check, unlike
-        // the province match which is a confident exact match.
-        private async Task<Guid?> ResolveMetroDistrictIdAsync(
-            string? deliveryLocation, Guid? provinceId, CancellationToken cancellationToken)
+        private async Task<Guid?> ResolveMetroDistrictIdAsync(string? deliveryLocation, Guid? provinceId, CancellationToken cancellationToken)
         {
             if (string.IsNullOrWhiteSpace(deliveryLocation) || provinceId is null)
                 return null;
@@ -99,8 +91,66 @@ namespace iTender.Integrator.Infrastructure.Services
             }
         }
 
-        public async Task<ReleaseComplianceView> EnrichAsync(
-            OcdsReleaseDto releaseDto, CancellationToken cancellationToken = default)
+        private async Task<Guid?> ResolveClassOfWorkTypeIdAsync(string? category, string? description, CancellationToken cancellationToken)
+        {
+            var searchText = string.Join(
+                " ", new[] { category, description }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+            if (string.IsNullOrWhiteSpace(searchText))
+                return null;
+
+            try
+            {
+                var candidates = await _classOfWorkTypeRepository.GetAllAsync(cancellationToken);
+
+                var match = candidates.FirstOrDefault(c =>
+                    !string.IsNullOrWhiteSpace(c.Name) &&
+                    searchText.Contains(c.Name, StringComparison.OrdinalIgnoreCase));
+
+                if (match is not null)
+                {
+                    _logger.LogInformation(
+                        "Best-effort class-of-work match: '{ClassOfWorkName}' found in tender text '{SearchText}'. " +
+                        "Unverified heuristic - spot-check before trusting.",
+                        match.Name, searchText);
+                }
+
+                return match?.Id;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Class-of-work lookup failed for '{SearchText}'.", searchText);
+                return null;
+            }
+        }
+
+        private static ReleaseComplianceView BuildViewFromPersisted(Domain.Entities.Release existing)
+        {
+            var partyViews = existing.GetContractorCandidateParties()
+                .Select(p => new PartyComplianceView(
+                    p.ExternalId,
+                    p.Name,
+                    p.RegistrationScheme,
+                    p.RegistrationNumber,
+                    p.ComplianceStatus,
+                    "Loaded from a previous run - not re-checked against CSD/CRM."))
+                .ToList();
+
+            return new ReleaseComplianceView(
+                existing.Ocid,
+                existing.ReleaseId,
+                existing.Tender?.ExternalId,
+                existing.Tender?.Title,
+                existing.Tender?.Status.ToString(),
+                partyViews,
+                PublishedToCrm: existing.LastSyncedAtUtc.HasValue,
+                CrmTenderId: null,
+                PublishReason: existing.LastSyncedAtUtc.HasValue
+                    ? "Already processed in a previous run (loaded from persistence, not re-checked)."
+                    : "Previously ingested but not marked synced (a prior attempt may have failed) - not re-checked this run.");
+        }
+
+        public async Task<ReleaseComplianceView> EnrichAsync(OcdsReleaseDto releaseDto, CancellationToken cancellationToken = default)
         {
             if (releaseDto is null) throw new ArgumentNullException(nameof(releaseDto));
 
@@ -128,24 +178,33 @@ namespace iTender.Integrator.Infrastructure.Services
                     PublishReason: "Release could not be mapped to the domain model - see logs.");
             }
 
+            var existing = await _releaseRepository.GetByOcidAndReleaseIdAsync(
+                release.Ocid, release.ReleaseId, cancellationToken);
+
+            if (existing is not null)
+            {
+                _logger.LogInformation(
+                    "Release {Ocid}/{ReleaseId} already persisted - replaying stored result, not re-checking.",
+                    release.Ocid, release.ReleaseId);
+                return BuildViewFromPersisted(existing);
+            }
+
             if (release.Tender is not null && !release.Tender.IsConstructionRelated)
             {
                 _logger.LogInformation(
                     "Skipping release {Ocid}/{ReleaseId} - not construction-related (mainProcurementCategory='{Category}').",
                     release.Ocid, release.ReleaseId, release.Tender.MainProcurementCategory);
 
-                return new ReleaseComplianceView(
-                    release.Ocid,
-                    release.ReleaseId,
-                    release.Tender.ExternalId,
-                    release.Tender.Title,
-                    release.Tender.Status.ToString(),
+                return await PersistAndReturnAsync(
+                    release,
                     Array.Empty<PartyComplianceView>(),
-                    PublishedToCrm: false,
-                    CrmTenderId: null,
-                    PublishReason: $"Skipped - not a construction tender " +
+                    publishedToCrm: false,
+                    crmTenderId: null,
+                    publishReason: $"Skipped - not a construction tender " +
                         $"(mainProcurementCategory='{release.Tender.MainProcurementCategory}'). " +
-                        "No CSD/CRM compliance checks were run and nothing was published.");
+                        "No CSD/CRM compliance checks were run and nothing was published.",
+                    synced: true,
+                    cancellationToken);
             }
 
             var candidates = release.GetContractorCandidateParties().ToList();
@@ -193,12 +252,14 @@ namespace iTender.Integrator.Infrastructure.Services
             }
 
             var publishedToCrm = false;
+            var synced = false;
             Guid? crmTenderId = null;
             string? publishReason;
 
             if (release.Tender is null)
             {
                 publishReason = "Release has no tender attached (e.g. a planning-stage release) - nothing to publish.";
+                synced = true; // nothing further to do for this release
             }
             else
             {
@@ -207,16 +268,24 @@ namespace iTender.Integrator.Infrastructure.Services
                     var provinceId = await ResolveProvinceIdAsync(release.Tender.Province, cancellationToken);
                     var metroDistrictId = await ResolveMetroDistrictIdAsync(
                         release.Tender.DeliveryLocation, provinceId, cancellationToken);
-                    var createModel = TenderMapper.ToCreateTenderModel(release, provinceId, metroDistrictId);
+                    var classOfWorkTypeId = await ResolveClassOfWorkTypeIdAsync(
+                        release.Tender.Category, release.Tender.Description, cancellationToken);
+                    var createModel = TenderMapper.ToCreateTenderModel(
+                        release, provinceId, metroDistrictId, classOfWorkTypeId);
                     crmTenderId = await _tenderRepository.UpsertAsync(createModel, cancellationToken);
                     publishedToCrm = true;
+                    synced = true;
                     publishReason = "Published to CRM.";
                 }
                 catch (Exception ex)
                 {
                     // Same isolation principle as the per-party checks above: a CRM
                     // write failure shouldn't discard the compliance results we
-                    // already have for this release.
+                    // already have for this release. synced stays false so
+                    // GetUnsyncedAsync can surface this release for a retry later -
+                    // nothing currently calls GetUnsyncedAsync yet, but the release is
+                    // at least persisted with a correct, honest state rather than
+                    // silently reporting success.
                     _logger.LogError(
                         ex,
                         "Failed to publish tender for release {Ocid}/{ReleaseId} to CRM.",
@@ -224,6 +293,28 @@ namespace iTender.Integrator.Infrastructure.Services
 
                     publishReason = $"CRM publish failed: {ex.Message}";
                 }
+            }
+
+            return await PersistAndReturnAsync(
+                release, partyViews, publishedToCrm, crmTenderId, publishReason, synced, cancellationToken);
+        }
+
+        private async Task<ReleaseComplianceView> PersistAndReturnAsync(Domain.Entities.Release release, IReadOnlyCollection<PartyComplianceView> partyViews, bool publishedToCrm, Guid? crmTenderId, string? publishReason, bool synced, CancellationToken cancellationToken)
+        {
+            if (synced)
+                release.MarkSynced();
+
+            try
+            {
+                await _releaseRepository.AddAsync(release, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to persist release {Ocid}/{ReleaseId} - the release was still processed this run, " +
+                    "but will be re-pulled and re-processed next run since it wasn't saved.",
+                    release.Ocid, release.ReleaseId);
             }
 
             return new ReleaseComplianceView(
@@ -238,8 +329,7 @@ namespace iTender.Integrator.Infrastructure.Services
                 publishReason);
         }
 
-        public async Task<IReadOnlyCollection<ReleaseComplianceView>> EnrichAsync(
-            IEnumerable<OcdsReleaseDto> releaseDtos, CancellationToken cancellationToken = default)
+        public async Task<IReadOnlyCollection<ReleaseComplianceView>> EnrichAsync(IEnumerable<OcdsReleaseDto> releaseDtos, CancellationToken cancellationToken = default)
         {
             var views = new List<ReleaseComplianceView>();
 

@@ -26,5 +26,7 @@ namespace iTender.Integrator.Application.Interfaces
         Task<IReadOnlyCollection<Release>> GetUnsyncedAsync(
             int take = 100,
             CancellationToken cancellationToken = default);
+
+        Task<DateTime?> GetLatestFetchedAtUtcAsync(CancellationToken cancellationToken = default);
     }
 }

@@ -24,19 +24,19 @@ namespace iTender.Integrator.Api.Controllers
         // both CSD and CRM are keyed by the CSD number regardless of scheme label.
         [HttpGet("suppliers/{MAAANumber}")]
         public async Task<IActionResult> CheckSupplier(
-            string registrationNumber,
+            string MAAANumber,
             [FromQuery] string registrationScheme = "ZA-CSD",
             CancellationToken cancellationToken = default)
         {
-            if (string.IsNullOrWhiteSpace(registrationNumber))
+            if (string.IsNullOrWhiteSpace(MAAANumber))
                 return BadRequest("Registration number is required.");
 
             var party = Party.Create(
-                externalId: $"adhoc-{registrationNumber}",
-                name: registrationNumber,
+                externalId: $"adhoc-{MAAANumber}",
+                name: MAAANumber,
                 roles: PartyRole.Supplier,
                 registrationScheme: registrationScheme,
-                registrationNumber: registrationNumber);
+                registrationNumber: MAAANumber);
 
             var result = await _complianceService.CheckAsync(party, cancellationToken);
 

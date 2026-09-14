@@ -17,10 +17,10 @@ namespace iTender.Integrator.Api.Controllers
 
         [HttpGet("suppliers/{MAAANumber}")]
         public async Task<IActionResult> GetSupplier(
-            string supplierNumber,
+            string MAAANumber,
             CancellationToken cancellationToken)
         {
-            if (string.IsNullOrWhiteSpace(supplierNumber))
+            if (string.IsNullOrWhiteSpace(MAAANumber))
             {
                 return BadRequest("Supplier number is required.");
             }
@@ -28,7 +28,7 @@ namespace iTender.Integrator.Api.Controllers
             try
             {
                 var supplier = await _csdApiClient.GetSupplierDetailsAsync(
-                    supplierNumber,
+                    MAAANumber,
                     cancellationToken);
 
                 return Ok(supplier);

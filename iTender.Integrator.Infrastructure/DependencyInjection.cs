@@ -1,12 +1,15 @@
 ﻿using iTender.Integrator.Application.Interfaces;
+using iTender.Integrator.Infrastructure.BackgroundJobs;
 using iTender.Integrator.Infrastructure.Integrations.CRM;
 using iTender.Integrator.Infrastructure.Integrations.CSD;
 using iTender.Integrator.Infrastructure.Integrations.Ocds;
+using iTender.Integrator.Infrastructure.Persistence;
 using iTender.Integrator.Infrastructure.Repositories;
 using iTender.Integrator.Infrastructure.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
 
 namespace iTender.Integrator.Infrastructure
 {
@@ -71,6 +74,16 @@ namespace iTender.Integrator.Infrastructure
             services.AddScoped<IMetroDistrictRepository, MetroDistrictRepository>();
 
             services.AddScoped<IClassOfWorkTypeRepository, ClassOfWorkTypeRepository>();
+
+            services.Configure<OcdsPullOptions>(configuration.GetSection(OcdsPullOptions.SectionName));
+            services.AddHostedService<OcdsPullBackgroundService>();
+
+            // Connection string key: ConnectionStrings:ItenderIntegrator. Nothing
+            // written to appsettings.json here - add it wherever you keep that.
+            services.AddDbContext<ItenderIntegratorDbContext>(options =>
+                options.UseSqlServer(configuration.GetConnectionString("ItenderIntegrator")));
+
+            services.AddScoped<IReleaseRepository, ReleaseRepository>();
 
             return services;
         }

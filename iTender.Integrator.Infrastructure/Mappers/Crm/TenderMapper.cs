@@ -25,7 +25,8 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
         // "description" (e.g. "PROCUREMENT OF DEVELOPMENT AND ANALYSIS TRAINING
         // COURSE."). CreateTenderModel.Title/Name are mapped from Description
         // accordingly - the reverse of what this used to do.
-        public static CreateTenderModel ToCreateTenderModel(Release release, Guid? provinceId = null, Guid? metroDistrictId = null)
+        public static CreateTenderModel ToCreateTenderModel(
+            Release release, Guid? provinceId = null, Guid? metroDistrictId = null, Guid? classOfWorkTypeId = null)
         {
             if (release is null) throw new ArgumentNullException(nameof(release));
             if (release.Tender is null)
@@ -52,7 +53,8 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
                     Province = tender.Province
                 },
                 ProvinceId = provinceId,
-                MetroDistrictId = metroDistrictId
+                MetroDistrictId = metroDistrictId,
+                ClassOfConstructionWorksId = classOfWorkTypeId
             };
 
             if (tender.ContactPerson is not null)
@@ -75,14 +77,13 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
                 model.ClarificationMeetingDateAndTime = briefing.Date;
             }
 
-            // Deliberately left null: LocalMunicipalityId, ClassOfConstructionWorksId,
-            // SubCategoryId, TenderValueRangeId, EmployerId. ProvinceId and
-            // MetroDistrictId are now resolved by the caller (ReleaseComplianceService,
-            // via IProvinceRepository/IMetroDistrictRepository) and passed in above.
-            // The remaining ones still have no reliable OCDS-side signal to resolve
-            // from - ClassOfConstructionWorksId in particular has no automated path at
-            // all (see IClassOfWorkTypeRepository's doc comment). Writing a wrong guess
-            // is worse than leaving it blank.
+            // Deliberately left null: LocalMunicipalityId, SubCategoryId,
+            // TenderValueRangeId, EmployerId. ProvinceId, MetroDistrictId and
+            // ClassOfConstructionWorksId are now resolved by the caller
+            // (ReleaseComplianceService) and passed in above - the class-of-work
+            // resolution is best-effort (name-in-text matching against CRM's own
+            // nv_classofworktype names), same caveat as MetroDistrictId. The rest
+            // still have no signal to resolve from at all.
 
             return model;
         }
@@ -109,6 +110,13 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
             if (model.MetroDistrictId.HasValue)
                 entity[TenderFields.MetroDistrictId] =
                     new EntityReference(CrmEntityNames.MetroDistrict, model.MetroDistrictId.Value);
+
+            // Field name is nv_classofconstructionworkid - note it does NOT match the
+            // nv_classofworktype entity name it points to (that's just how this was
+            // named in CRM).
+            if (model.ClassOfConstructionWorksId.HasValue)
+                entity[TenderFields.ClassOfWork] =
+                    new EntityReference(CrmEntityNames.ClassOfWorkType, model.ClassOfConstructionWorksId.Value);
 
             if (model.Status.HasValue)
             {
