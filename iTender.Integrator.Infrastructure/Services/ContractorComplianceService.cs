@@ -40,6 +40,7 @@ namespace iTender.Integrator.Infrastructure.Services
             {
                 return Result(
                     party,
+                    null,
                     CidbComplianceStatus.RegistrationNotFound,
                     "Party carries no registration identifier (OCDS identifier.id was empty) - nothing to look up in CSD or CRM.",
                     csdFound: false,
@@ -69,6 +70,7 @@ namespace iTender.Integrator.Infrastructure.Services
 
                 return Result(
                     party,
+                    null,
                     CidbComplianceStatus.RegistrationNotFound,
                     $"CSD lookup failed for '{registrationNumber}': {ex.Message}",
                     csdFound: false,
@@ -80,6 +82,7 @@ namespace iTender.Integrator.Infrastructure.Services
             {
                 return Result(
                     party,
+                    null,
                     CidbComplianceStatus.RegistrationSuspended,
                     $"CSD reports supplier '{registrationNumber}' as inactive" +
                         (string.IsNullOrWhiteSpace(supplier.SupplierIdentification.SupplierInactiveReason)
@@ -94,6 +97,7 @@ namespace iTender.Integrator.Infrastructure.Services
             {
                 return Result(
                     party,
+                    null,
                     CidbComplianceStatus.NonCompliant,
                     $"CSD reports supplier '{registrationNumber}' as not tax registered.",
                     csdFound: true,
@@ -110,6 +114,7 @@ namespace iTender.Integrator.Infrastructure.Services
             {
                 return Result(
                     party,
+                    null,
                     CidbComplianceStatus.RegistrationNotFound,
                     $"Supplier '{registrationNumber}' is active on CSD but has no matching CIDB contractor record on iTender.",
                     csdFound: true,
@@ -121,6 +126,7 @@ namespace iTender.Integrator.Infrastructure.Services
             {
                 return Result(
                     party,
+                    contractor.CrsNumber,
                     CidbComplianceStatus.NonCompliant,
                     $"Contractor '{registrationNumber}' is currently sanctioned on iTender.",
                     csdFound: true,
@@ -132,6 +138,7 @@ namespace iTender.Integrator.Infrastructure.Services
             {
                 return Result(
                     party,
+                    contractor.CrsNumber,
                     CidbComplianceStatus.RegistrationSuspended,
                     $"Contractor '{registrationNumber}' is under a CIDB moratorium on iTender.",
                     csdFound: true,
@@ -142,7 +149,8 @@ namespace iTender.Integrator.Infrastructure.Services
             if (string.IsNullOrWhiteSpace(contractor.CurrentContractorGradingDesignation))
             {
                 return Result(
-                    party,
+                    party, 
+                    contractor.CrsNumber,
                     CidbComplianceStatus.GradingInsufficient,
                     $"Contractor '{registrationNumber}' has no current grading designation on file on iTender.",
                     csdFound: true,
@@ -158,6 +166,7 @@ namespace iTender.Integrator.Infrastructure.Services
             // CurrentContractorGradingDesignation (e.g. "8GB PE") from a live CRM record.
             return Result(
                 party,
+                contractor.CrsNumber,
                 CidbComplianceStatus.Compliant,
                 $"Contractor '{registrationNumber}' is active on CSD, not sanctioned or under moratorium, " +
                     $"and holds grading designation '{contractor.CurrentContractorGradingDesignation}'.",
@@ -168,6 +177,7 @@ namespace iTender.Integrator.Infrastructure.Services
 
         private static ContractorComplianceResult Result(
             Party party,
+            string? CRSNumber,
             CidbComplianceStatus status,
             string reason,
             bool csdFound,
@@ -175,6 +185,7 @@ namespace iTender.Integrator.Infrastructure.Services
             DateTime checkedAtUtc)
             => new(
                 party.ExternalId,
+                CRSNumber,
                 party.RegistrationNumber,
                 status,
                 status.ToString(),

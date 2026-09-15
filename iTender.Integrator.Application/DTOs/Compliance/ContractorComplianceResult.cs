@@ -4,7 +4,8 @@ namespace iTender.Integrator.Application.DTOs.Compliance
 {
     public sealed record ContractorComplianceResult(
         string PartyExternalId,
-        string? RegistrationNumber,
+        string? CRSNumber,
+        string? MAAANumber,
         CidbComplianceStatus Status,
         string StatusText,
         string Reason,
