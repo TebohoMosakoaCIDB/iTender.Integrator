@@ -60,11 +60,12 @@ namespace iTender.Integrator.Infrastructure.Persistence.Configurations
             builder.Navigation(c => c.Transactions).UsePropertyAccessMode(PropertyAccessMode.Field);
 
             // Shares the TenderDocuments table with Tender.Documents - see
-            // TenderDocumentConfiguration.
+            // TenderDocumentConfiguration and the matching note in
+            // TenderConfiguration for why this is ClientCascade, not Cascade.
             builder.HasMany(c => c.Documents)
                 .WithOne()
                 .HasForeignKey("ContractId")
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.ClientCascade);
             builder.Navigation(c => c.Documents).UsePropertyAccessMode(PropertyAccessMode.Field);
 
             builder.Ignore(c => c.DomainEvents);

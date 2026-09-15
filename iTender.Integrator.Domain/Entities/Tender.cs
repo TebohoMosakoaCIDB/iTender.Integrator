@@ -151,6 +151,6 @@ namespace iTender.Integrator.Domain.Entities
         public void AddDocument(TenderDocument document) => _documents.Add(document ?? throw new ArgumentNullException(nameof(document)));
 
         public bool IsOpenForSubmission(DateTime asOfUtc)
-            => Status == TenderStatus.Active && (TenderPeriod?.IsOpenNow(asOfUtc) ?? false);
+            => Status == TenderStatus.ADVERTISED_STATUS && (TenderPeriod?.IsOpenNow(asOfUtc) ?? false);
     }
 }

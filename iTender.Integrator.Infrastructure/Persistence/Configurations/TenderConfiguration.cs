@@ -103,11 +103,18 @@ namespace iTender.Integrator.Infrastructure.Persistence.Configurations
             builder.Navigation(t => t.Items).UsePropertyAccessMode(PropertyAccessMode.Field);
 
             // TenderDocument is also used by Contract.Documents - see
-            // TenderDocumentConfiguration for why both relationships share one table.
+            // TenderDocumentConfiguration. ClientCascade (not Cascade): SQL Server
+            // refuses ON DELETE CASCADE on both this and Contract's edge into the
+            // same table (a Release delete would reach TenderDocument via two
+            // cascade paths - through Tender and through Contract - which SQL
+            // Server rejects even though only one FK is ever populated per row).
+            // ClientCascade still deletes orphaned documents correctly for any
+            // delete that goes through EF (the only way this app deletes anything),
+            // it just does it as explicit statements instead of a DB-level cascade.
             builder.HasMany(t => t.Documents)
                 .WithOne()
                 .HasForeignKey("TenderId")
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.ClientCascade);
             builder.Navigation(t => t.Documents).UsePropertyAccessMode(PropertyAccessMode.Field);
 
             builder.Ignore(t => t.DomainEvents);

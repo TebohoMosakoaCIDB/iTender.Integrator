@@ -1,7 +1,6 @@
 ﻿using iTender.Integrator.Domain.Common;
 using iTender.Integrator.Domain.Enums;
 using iTender.Integrator.Domain.Events;
-using System.Diagnostics.Contracts;
 
 namespace iTender.Integrator.Domain.Entities
 {

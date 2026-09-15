@@ -1,9 +1,6 @@
 ﻿using iTender.Integrator.Domain.Common;
 using iTender.Integrator.Domain.Enums;
 using iTender.Integrator.Domain.ValueObjects;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace iTender.Integrator.Domain.Entities
 {

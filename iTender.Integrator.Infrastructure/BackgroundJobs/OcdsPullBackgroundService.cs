@@ -47,19 +47,38 @@ namespace iTender.Integrator.Infrastructure.BackgroundJobs
         private async Task RunOnceAsync(CancellationToken stoppingToken)
         {
             var runStartedUtc = DateTime.UtcNow;
-            var from = _lastSuccessfulPullUtc
-                ?? runStartedUtc.AddHours(-Math.Max(1, _options.InitialLookbackHours));
-
-            _logger.LogInformation("OCDS pull run starting - from {From:o} to {To:o}.", from, runStartedUtc);
 
             // OcdsPullBackgroundService itself is a singleton (required for
-            // BackgroundService); IOcdsApiClient/IReleaseComplianceService sit on top
-            // of scoped dependencies (ICrmServiceFactory, HttpClient), so each run
-            // gets its own DI scope rather than capturing scoped services at
-            // construction time.
+            // BackgroundService); IOcdsApiClient/IReleaseComplianceService/
+            // IReleaseRepository sit on top of scoped dependencies (ICrmServiceFactory,
+            // HttpClient, the DbContext), so each run gets its own DI scope rather
+            // than capturing scoped services at construction time.
             using var scope = _scopeFactory.CreateScope();
             var ocdsApiClient = scope.ServiceProvider.GetRequiredService<IOcdsApiClient>();
             var releaseComplianceService = scope.ServiceProvider.GetRequiredService<IReleaseComplianceService>();
+            var releaseRepository = scope.ServiceProvider.GetRequiredService<IReleaseRepository>();
+
+            var from = _lastSuccessfulPullUtc;
+
+            if (from is null)
+            {
+                // Cold start (or first run after a restart) - ask the database for
+                // the last time we actually persisted something, rather than
+                // assuming there's nothing there. This is what makes the in-memory
+                // fast path safe to lose on restart: it's a cache of this value, not
+                // the only copy of it.
+                from = await releaseRepository.GetLatestFetchedAtUtcAsync(stoppingToken);
+
+                if (from.HasValue)
+                {
+                    _logger.LogInformation(
+                        "No in-memory cursor (likely a fresh start) - resuming from persisted cursor {From:o}.", from);
+                }
+            }
+
+            from ??= runStartedUtc.AddHours(-Math.Max(1, _options.InitialLookbackHours));
+
+            _logger.LogInformation("OCDS pull run starting - from {From:o} to {To:o}.", from, runStartedUtc);
 
             var pulled = 0;
             var published = 0;

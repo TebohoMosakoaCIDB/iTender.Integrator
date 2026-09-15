@@ -14,6 +14,18 @@ namespace iTender.Integrator.Domain.ValueObjects
 
         public string? PayeeId { get; }
 
+        // EF Core needs this: it can't bind an owned-type value (Money) as a
+        // constructor parameter (see the "No suitable constructor was found" error
+        // this fixes), so it falls back to a parameterless constructor plus
+        // backing-field access for the get-only properties above. The public
+        // surface (Create(...), no setters) is unchanged - this is purely for EF's
+        // materialization path, application code still can't construct an invalid
+        // ContractTransaction.
+        private ContractTransaction()
+        {
+            ExternalId = string.Empty;
+        }
+
         private ContractTransaction(string externalId, DateTime? date, Money? value, string? payerId, string? payeeId)
         {
             ExternalId = externalId;
