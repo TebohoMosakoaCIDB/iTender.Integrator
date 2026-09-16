@@ -8,5 +8,6 @@
         public int InitialLookbackHours { get; set; } = 24;
         public int PageSize { get; set; } = 50;
         public int MaxPagesPerRun { get; set; } = 20;
+        public int RetryBatchSize { get; set; } = 50;
     }
 }

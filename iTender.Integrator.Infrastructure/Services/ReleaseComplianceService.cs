@@ -229,6 +229,10 @@ namespace iTender.Integrator.Infrastructure.Services
                 }
                 catch (Exception ex)
                 {
+                    // Same isolation principle as the per-party checks above: a CRM
+                    // write failure shouldn't discard the compliance results we
+                    // already have for this release. synced stays false so
+                    // RetryUnsyncedAsync picks this release up again on a future run.
                     _logger.LogError(
                         ex,
                         "Failed to publish tender for release {Ocid}/{ReleaseId} to CRM.",
@@ -239,6 +243,34 @@ namespace iTender.Integrator.Infrastructure.Services
             }
 
             return new ProcessOutcome(partyViews, publishedToCrm, crmTenderId, publishReason, synced);
+        }
+
+        // Only reached now for a release that IS synced - an unsynced one is routed
+        // to RetryAsync instead (see EnrichAsync above). CrmTenderId is always null
+        // here: nothing persists the CRM tender's own Guid anywhere on Release, so a
+        // replay genuinely can't report it. Real gap, not an oversight.
+        private static ReleaseComplianceView BuildViewFromPersisted(Domain.Entities.Release existing)
+        {
+            var partyViews = existing.GetContractorCandidateParties()
+                .Select(p => new PartyComplianceView(
+                    p.ExternalId,
+                    p.Name,
+                    p.RegistrationScheme,
+                    p.RegistrationNumber,
+                    p.ComplianceStatus,
+                    "Loaded from a previous run - not re-checked against CSD/CRM."))
+                .ToList();
+
+            return new ReleaseComplianceView(
+                existing.Ocid,
+                existing.ReleaseId,
+                existing.Tender?.ExternalId,
+                existing.Tender?.Title,
+                existing.Tender?.Status.ToString(),
+                partyViews,
+                PublishedToCrm: true,
+                CrmTenderId: null,
+                PublishReason: "Already published to CRM in a previous run (loaded from persistence, not re-checked).");
         }
 
         public async Task<ReleaseComplianceView> EnrichAsync(OcdsReleaseDto releaseDto, CancellationToken cancellationToken = default)
@@ -274,20 +306,26 @@ namespace iTender.Integrator.Infrastructure.Services
 
             if (existing is not null)
             {
+                if (existing.LastSyncedAtUtc.HasValue)
+                {
+                    _logger.LogInformation(
+                        "Release {Ocid}/{ReleaseId} already synced - replaying stored result, not re-checking.",
+                        release.Ocid, release.ReleaseId);
+                    return BuildViewFromPersisted(existing);
+                }
+
+                // Previously persisted but never synced (a prior attempt failed) -
+                // OCDS re-delivering the same release is exactly the trigger a retry
+                // needs, so use it rather than replaying the same failure forever.
                 _logger.LogInformation(
-                    "Release {Ocid}/{ReleaseId} already persisted - replaying stored result, not re-checking.",
+                    "Release {Ocid}/{ReleaseId} was re-delivered but was never synced - retrying instead of replaying.",
                     release.Ocid, release.ReleaseId);
-                return BuildViewFromPersisted(existing);
+                return await RetryAsync(existing, cancellationToken);
             }
 
             var outcome = await ProcessReleaseAsync(release, cancellationToken);
 
             return await PersistAndReturnAsync(release, outcome, isNew: true, cancellationToken);
-        }
-
-        private ReleaseComplianceView BuildViewFromPersisted(Release existing)
-        {
-            throw new NotImplementedException();
         }
 
         public async Task<ReleaseComplianceView> RetryAsync(

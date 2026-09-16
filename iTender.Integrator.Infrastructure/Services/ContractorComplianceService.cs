@@ -169,7 +169,7 @@ namespace iTender.Integrator.Infrastructure.Services
                 contractor.CrsNumber,
                 CidbComplianceStatus.Compliant,
                 $"Contractor '{registrationNumber}' is active on CSD, not sanctioned or under moratorium, " +
-                    $"and holds grading designation '{contractor.CurrentContractorGradingDesignation}'.",
+                    $"and holds the following CIDB grading designations '{contractor.CurrentContractorGradingDesignation}'.",
                 csdFound: true,
                 crmFound: true,
                 checkedAtUtc);

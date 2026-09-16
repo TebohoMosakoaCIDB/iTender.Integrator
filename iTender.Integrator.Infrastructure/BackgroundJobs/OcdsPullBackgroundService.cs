@@ -137,6 +137,28 @@ namespace iTender.Integrator.Infrastructure.BackgroundJobs
                     "OCDS pull run failed after {Pulled} releases - will retry from the same window ({From:o}) next run.",
                     pulled, from);
             }
+
+            // Separate try/catch from the pull above on purpose: a retry-sweep
+            // failure shouldn't be logged as if the pull itself failed (which would
+            // wrongly hold back the cursor), and a pull failure shouldn't skip the
+            // sweep - these two concerns are independent of each other.
+            try
+            {
+                var retried = await releaseComplianceService.RetryUnsyncedAsync(
+                    Math.Max(1, _options.RetryBatchSize), stoppingToken);
+
+                if (retried.Count > 0)
+                {
+                    var nowPublished = retried.Count(v => v.PublishedToCrm);
+                    _logger.LogInformation(
+                        "Retry sweep: re-attempted {Count} previously unsynced release(s), {NowPublished} now published.",
+                        retried.Count, nowPublished);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Retry sweep failed - unsynced releases remain unsynced, will try again next run.");
+            }
         }
     }
 }
