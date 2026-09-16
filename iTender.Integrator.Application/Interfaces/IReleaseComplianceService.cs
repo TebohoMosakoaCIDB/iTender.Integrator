@@ -1,5 +1,6 @@
 ﻿using iTender.Integrator.Application.DTOs.Compliance;
 using iTender.Integrator.Application.DTOs.Ocds;
+using iTender.Integrator.Domain.Entities;
 
 namespace iTender.Integrator.Application.Interfaces
 {
@@ -11,6 +12,14 @@ namespace iTender.Integrator.Application.Interfaces
 
         Task<IReadOnlyCollection<ReleaseComplianceView>> EnrichAsync(
             IEnumerable<OcdsReleaseDto> releaseDtos,
+            CancellationToken cancellationToken = default);
+
+        Task<ReleaseComplianceView> RetryAsync(
+            Release release,
+            CancellationToken cancellationToken = default);
+
+        Task<IReadOnlyCollection<ReleaseComplianceView>> RetryUnsyncedAsync(
+            int take = 100,
             CancellationToken cancellationToken = default);
     }
 }

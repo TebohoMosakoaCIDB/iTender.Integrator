@@ -61,6 +61,8 @@ namespace iTender.Integrator.Infrastructure
 
             services.AddScoped<ICrmServiceFactory, CrmServiceFactory>();
 
+            services.AddScoped<IContractorRepository, ContractorRepository>();
+
             services.AddScoped<IContractorGradeRepository, ContractorGradeRepository>();
 
             services.AddScoped<IContractorComplianceService, ContractorComplianceService>();
@@ -74,6 +76,8 @@ namespace iTender.Integrator.Infrastructure
             services.AddScoped<IMetroDistrictRepository, MetroDistrictRepository>();
 
             services.AddScoped<IClassOfWorkTypeRepository, ClassOfWorkTypeRepository>();
+
+            services.AddScoped<IContractorProfileService, ContractorProfileService>();
 
             services.Configure<OcdsPullOptions>(configuration.GetSection(OcdsPullOptions.SectionName));
             services.AddHostedService<OcdsPullBackgroundService>();

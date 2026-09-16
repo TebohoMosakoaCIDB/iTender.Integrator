@@ -9,15 +9,25 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
 {
     public static class TenderMapper
     {
-        // Confirmed against a previous project's real StatusCodeId writes. Only these
-        // three are known; TenderStatus.Unsuccessful/Complete/Withdrawn/Unknown are
-        // deliberately left unmapped below rather than guessed - confirm the real
-        // codes before adding them.
-        private static readonly Dictionary<TenderStatus, int> KnownCrmStatusCodes = new()
+        // Confirmed: nv_tender.statuscode genuinely only has these four values -
+        // there is no separate "Awarded" status. CRM tracks post-award lifecycle via
+        // a separate Contract entity (nv_contract, which has its own TenderId lookup
+        // back to this record) instead of a tender statuscode value. So this mapping
+        // is now complete, not partial: every TenderStatus has a home.
+        // Unsuccessful/Complete/Withdrawn all land on Closed - CRM has no finer-
+        // grained distinction between "the tender process ended without an award"
+        // and "the tender process ended because it was awarded" at the tender level;
+        // that distinction lives in whether a linked Contract exists, not in this
+        // field. TenderStatus.Unknown is deliberately left unmapped - an OCDS status
+        // we couldn't even parse shouldn't be forced into a specific CRM state.
+        private static readonly Dictionary<TenderStatus, iTenderTenderStatus> KnownCrmStatusCodes = new()
         {
-            [TenderStatus.Planning] = 1,          // Draft
-            [TenderStatus.Active] = 100000000,    // Advertised
-            [TenderStatus.Cancelled] = 100000001  // Cancelled
+            [TenderStatus.Planning] = iTenderTenderStatus.DRAFT_STATUS,
+            [TenderStatus.Active] = iTenderTenderStatus.ADVERTISED_STATUS,
+            [TenderStatus.Cancelled] = iTenderTenderStatus.CANCELLED_STATUS,
+            [TenderStatus.Unsuccessful] = iTenderTenderStatus.CLOSED_STATUS,
+            [TenderStatus.Complete] = iTenderTenderStatus.CLOSED_STATUS,
+            [TenderStatus.Withdrawn] = iTenderTenderStatus.CLOSED_STATUS
         };
         // EmployerTenderNumber = tender.Title, confirmed against a real release: OCDS
         // "title" here holds the employer's own quote/reference number (e.g.
@@ -120,22 +130,23 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
 
             if (model.Status.HasValue)
             {
-                if (KnownCrmStatusCodes.TryGetValue(model.Status.Value, out var statusCode))
+                if (KnownCrmStatusCodes.TryGetValue(model.Status.Value, out var crmStatus))
                 {
-                    entity[TenderFields.StatusCode] = new OptionSetValue(statusCode);
+                    entity[TenderFields.StatusCode] = new OptionSetValue((int)crmStatus);
 
                     // Side effects confirmed against the same previous-project code
-                    // the status codes came from - Advertised stamps DateAdvertised,
-                    // Cancelled flags IsClosed.
+                    // the status codes came from - Advertised stamps DateAdvertised.
+                    // IsClosed is set for every status that lands on Closed
+                    // (Cancelled, and now Unsuccessful/Complete/Withdrawn too) - the
+                    // field name is generic, not Cancelled-specific.
                     if (model.Status.Value == TenderStatus.Active)
                         entity[TenderFields.DateAdvertised] = DateTime.UtcNow;
 
-                    if (model.Status.Value == TenderStatus.Cancelled)
+                    if (crmStatus is iTenderTenderStatus.CANCELLED_STATUS or iTenderTenderStatus.CLOSED_STATUS)
                         entity[TenderFields.IsClosed] = true;
                 }
-                // else: TenderStatus.Unsuccessful/Complete/Withdrawn/Unknown - no
-                // confirmed CRM code yet, so statuscode (and any side effects) are
-                // left untouched rather than guessed.
+                // else: TenderStatus.Unknown - deliberately left unmapped, see the
+                // comment on KnownCrmStatusCodes above.
             }
 
             if (!string.IsNullOrWhiteSpace(model.PrimaryAddress?.Line1))

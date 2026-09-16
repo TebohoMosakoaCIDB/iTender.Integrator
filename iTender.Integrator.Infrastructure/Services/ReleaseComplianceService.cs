@@ -2,6 +2,7 @@
 using iTender.Integrator.Application.DTOs.Ocds;
 using iTender.Integrator.Application.Interfaces;
 using iTender.Integrator.Application.Mapping;
+using iTender.Integrator.Domain.Entities;
 using iTender.Integrator.Infrastructure.Mappers.Crm;
 using Microsoft.Extensions.Logging;
 
@@ -124,87 +125,36 @@ namespace iTender.Integrator.Infrastructure.Services
             }
         }
 
-        private static ReleaseComplianceView BuildViewFromPersisted(Domain.Entities.Release existing)
+        private sealed record ProcessOutcome(
+            IReadOnlyCollection<PartyComplianceView> PartyViews,
+            bool PublishedToCrm,
+            Guid? CrmTenderId,
+            string? PublishReason,
+            bool Synced);
+
+        // Everything EnrichAsync and RetryAsync share: construction filter, party
+        // compliance checks, and the CRM publish attempt. Deliberately takes a
+        // fully-formed Release rather than a DTO - EnrichAsync gets there by mapping
+        // a fresh OCDS payload, RetryAsync gets there by loading one back out of
+        // IReleaseRepository. Persistence (Add vs Update) is the one thing that
+        // differs between the two callers, so it stays out of this method.
+        private async Task<ProcessOutcome> ProcessReleaseAsync(
+            Domain.Entities.Release release, CancellationToken cancellationToken)
         {
-            var partyViews = existing.GetContractorCandidateParties()
-                .Select(p => new PartyComplianceView(
-                    p.ExternalId,
-                    p.Name,
-                    p.RegistrationScheme,
-                    p.RegistrationNumber,
-                    p.ComplianceStatus,
-                    "Loaded from a previous run - not re-checked against CSD/CRM."))
-                .ToList();
-
-            return new ReleaseComplianceView(
-                existing.Ocid,
-                existing.ReleaseId,
-                existing.Tender?.ExternalId,
-                existing.Tender?.Title,
-                existing.Tender?.Status.ToString(),
-                partyViews,
-                PublishedToCrm: existing.LastSyncedAtUtc.HasValue,
-                CrmTenderId: null,
-                PublishReason: existing.LastSyncedAtUtc.HasValue
-                    ? "Already processed in a previous run (loaded from persistence, not re-checked)."
-                    : "Previously ingested but not marked synced (a prior attempt may have failed) - not re-checked this run.");
-        }
-
-        public async Task<ReleaseComplianceView> EnrichAsync(OcdsReleaseDto releaseDto, CancellationToken cancellationToken = default)
-        {
-            if (releaseDto is null) throw new ArgumentNullException(nameof(releaseDto));
-
-            Domain.Entities.Release release;
-            try
-            {
-                release = OcdsReleaseMapper.ToDomain(releaseDto);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(
-                    ex,
-                    "Failed to map release {OcId}/{Id} to the domain model.",
-                    releaseDto.OcId, releaseDto.Id);
-
-                return new ReleaseComplianceView(
-                    releaseDto.OcId ?? string.Empty,
-                    releaseDto.Id ?? string.Empty,
-                    null,
-                    null,
-                    null,
-                    Array.Empty<PartyComplianceView>(),
-                    PublishedToCrm: false,
-                    CrmTenderId: null,
-                    PublishReason: "Release could not be mapped to the domain model - see logs.");
-            }
-
-            var existing = await _releaseRepository.GetByOcidAndReleaseIdAsync(
-                release.Ocid, release.ReleaseId, cancellationToken);
-
-            if (existing is not null)
-            {
-                _logger.LogInformation(
-                    "Release {Ocid}/{ReleaseId} already persisted - replaying stored result, not re-checking.",
-                    release.Ocid, release.ReleaseId);
-                return BuildViewFromPersisted(existing);
-            }
-
             if (release.Tender is not null && !release.Tender.IsConstructionRelated)
             {
                 _logger.LogInformation(
                     "Skipping release {Ocid}/{ReleaseId} - not construction-related (mainProcurementCategory='{Category}').",
                     release.Ocid, release.ReleaseId, release.Tender.MainProcurementCategory);
 
-                return await PersistAndReturnAsync(
-                    release,
+                return new ProcessOutcome(
                     Array.Empty<PartyComplianceView>(),
-                    publishedToCrm: false,
-                    crmTenderId: null,
-                    publishReason: $"Skipped - not a construction tender " +
+                    PublishedToCrm: false,
+                    CrmTenderId: null,
+                    PublishReason: $"Skipped - not a construction tender " +
                         $"(mainProcurementCategory='{release.Tender.MainProcurementCategory}'). " +
                         "No CSD/CRM compliance checks were run and nothing was published.",
-                    synced: true,
-                    cancellationToken);
+                    Synced: true);
             }
 
             var candidates = release.GetContractorCandidateParties().ToList();
@@ -279,13 +229,6 @@ namespace iTender.Integrator.Infrastructure.Services
                 }
                 catch (Exception ex)
                 {
-                    // Same isolation principle as the per-party checks above: a CRM
-                    // write failure shouldn't discard the compliance results we
-                    // already have for this release. synced stays false so
-                    // GetUnsyncedAsync can surface this release for a retry later -
-                    // nothing currently calls GetUnsyncedAsync yet, but the release is
-                    // at least persisted with a correct, honest state rather than
-                    // silently reporting success.
                     _logger.LogError(
                         ex,
                         "Failed to publish tender for release {Ocid}/{ReleaseId} to CRM.",
@@ -295,26 +238,112 @@ namespace iTender.Integrator.Infrastructure.Services
                 }
             }
 
-            return await PersistAndReturnAsync(
-                release, partyViews, publishedToCrm, crmTenderId, publishReason, synced, cancellationToken);
+            return new ProcessOutcome(partyViews, publishedToCrm, crmTenderId, publishReason, synced);
         }
 
-        private async Task<ReleaseComplianceView> PersistAndReturnAsync(Domain.Entities.Release release, IReadOnlyCollection<PartyComplianceView> partyViews, bool publishedToCrm, Guid? crmTenderId, string? publishReason, bool synced, CancellationToken cancellationToken)
+        public async Task<ReleaseComplianceView> EnrichAsync(OcdsReleaseDto releaseDto, CancellationToken cancellationToken = default)
         {
-            if (synced)
-                release.MarkSynced();
+            if (releaseDto is null) throw new ArgumentNullException(nameof(releaseDto));
 
+            Domain.Entities.Release release;
             try
             {
-                await _releaseRepository.AddAsync(release, cancellationToken);
+                release = OcdsReleaseMapper.ToDomain(releaseDto);
             }
             catch (Exception ex)
             {
                 _logger.LogError(
                     ex,
-                    "Failed to persist release {Ocid}/{ReleaseId} - the release was still processed this run, " +
-                    "but will be re-pulled and re-processed next run since it wasn't saved.",
+                    "Failed to map release {OcId}/{Id} to the domain model.",
+                    releaseDto.OcId, releaseDto.Id);
+
+                return new ReleaseComplianceView(
+                    releaseDto.OcId ?? string.Empty,
+                    releaseDto.Id ?? string.Empty,
+                    null,
+                    null,
+                    null,
+                    Array.Empty<PartyComplianceView>(),
+                    PublishedToCrm: false,
+                    CrmTenderId: null,
+                    PublishReason: "Release could not be mapped to the domain model - see logs.");
+            }
+
+            var existing = await _releaseRepository.GetByOcidAndReleaseIdAsync(
+                release.Ocid, release.ReleaseId, cancellationToken);
+
+            if (existing is not null)
+            {
+                _logger.LogInformation(
+                    "Release {Ocid}/{ReleaseId} already persisted - replaying stored result, not re-checking.",
                     release.Ocid, release.ReleaseId);
+                return BuildViewFromPersisted(existing);
+            }
+
+            var outcome = await ProcessReleaseAsync(release, cancellationToken);
+
+            return await PersistAndReturnAsync(release, outcome, isNew: true, cancellationToken);
+        }
+
+        private ReleaseComplianceView BuildViewFromPersisted(Release existing)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task<ReleaseComplianceView> RetryAsync(
+            Domain.Entities.Release release, CancellationToken cancellationToken = default)
+        {
+            if (release is null) throw new ArgumentNullException(nameof(release));
+
+            _logger.LogInformation(
+                "Retrying previously unsynced release {Ocid}/{ReleaseId}.", release.Ocid, release.ReleaseId);
+
+            var outcome = await ProcessReleaseAsync(release, cancellationToken);
+
+            return await PersistAndReturnAsync(release, outcome, isNew: false, cancellationToken);
+        }
+
+        public async Task<IReadOnlyCollection<ReleaseComplianceView>> RetryUnsyncedAsync(
+            int take = 100, CancellationToken cancellationToken = default)
+        {
+            var unsynced = await _releaseRepository.GetUnsyncedAsync(take, cancellationToken);
+
+            if (unsynced.Count == 0)
+                return Array.Empty<ReleaseComplianceView>();
+
+            _logger.LogInformation("Retrying {Count} previously unsynced release(s).", unsynced.Count);
+
+            var views = new List<ReleaseComplianceView>(unsynced.Count);
+
+            foreach (var release in unsynced)
+                views.Add(await RetryAsync(release, cancellationToken));
+
+            return views;
+        }
+
+        private async Task<ReleaseComplianceView> PersistAndReturnAsync(
+            Domain.Entities.Release release,
+            ProcessOutcome outcome,
+            bool isNew,
+            CancellationToken cancellationToken)
+        {
+            if (outcome.Synced)
+                release.MarkSynced();
+
+            try
+            {
+                if (isNew)
+                    await _releaseRepository.AddAsync(release, cancellationToken);
+                else
+                    await _releaseRepository.UpdateAsync(release, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Failed to persist release {Ocid}/{ReleaseId} ({Operation}) - the release was still " +
+                    "processed this run, but the outcome wasn't saved.",
+                    release.Ocid, release.ReleaseId, isNew ? "insert" : "update");
             }
 
             return new ReleaseComplianceView(
@@ -323,10 +352,10 @@ namespace iTender.Integrator.Infrastructure.Services
                 release.Tender?.ExternalId,
                 release.Tender?.Title,
                 release.Tender?.Status.ToString(),
-                partyViews,
-                publishedToCrm,
-                crmTenderId,
-                publishReason);
+                outcome.PartyViews,
+                outcome.PublishedToCrm,
+                outcome.CrmTenderId,
+                outcome.PublishReason);
         }
 
         public async Task<IReadOnlyCollection<ReleaseComplianceView>> EnrichAsync(IEnumerable<OcdsReleaseDto> releaseDtos, CancellationToken cancellationToken = default)
