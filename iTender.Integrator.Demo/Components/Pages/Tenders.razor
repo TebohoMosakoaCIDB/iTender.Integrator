@@ -1,0 +1,160 @@
+﻿@page "/tenders"
+@rendermode InteractiveServer
+
+@using System.Text.Json
+@using iTender.Integrator.Demo.Helpers
+@using iTender.Integrator.Demo.Services
+
+@inject IntegratorApiClient Api
+
+<PageTitle>Tenders | iTender Integrator</PageTitle>
+
+<div class="page-header">
+    <div>
+        <div class="eyebrow">National Treasury</div>
+        <h1>Tender Releases</h1>
+        <p>OCDS tender data retrieved through the iTender integration API.</p>
+    </div>
+
+    <button class="btn btn-dark"
+            @onclick="LoadData"
+            disabled="@_loading">
+        Refresh
+    </button>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-card">
+        <div class="spinner-border"></div>
+        <div>Loading tender releases...</div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">
+        @_error
+    </div>
+}
+else
+{
+    <div class="section-card">
+
+        <div class="table-responsive">
+            <table class="table integration-table">
+                <thead>
+                    <tr>
+                        <th>OCID</th>
+                        <th>Tender</th>
+                        <th>Buyer</th>
+                        <th>Closing Date</th>
+                        <th>Published</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                @foreach (var release in _releases)
+                {
+                    <tr>
+                        <td>
+                            <span class="code-value">
+                                @Value(
+                                    release,
+                                    "ocid",
+                                    "id")
+                            </span>
+                        </td>
+
+                        <td>
+                            <strong>
+                                @Value(
+                                    release,
+                                    "tender.title",
+                                    "title")
+                            </strong>
+                        </td>
+
+                        <td>
+                            @Value(
+                                release,
+                                "buyer.name",
+                                "procuringEntity.name")
+                        </td>
+
+                        <td>
+                            @Value(
+                                release,
+                                "tender.closingDate",
+                                "closingDate")
+                        </td>
+
+                        <td>
+                            @Value(
+                                release,
+                                "date",
+                                "publishedDate")
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+}
+
+@code {
+
+    private bool _loading;
+    private string? _error;
+
+    private IReadOnlyList<JsonElement> _releases = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            var to = DateTime.Today;
+            var from = to.AddDays(-30);
+            var result =
+                await Api.GetOcdsReleasesAsync(
+                    pageNumber: 1,
+                    pageSize: 50,
+                    from: from,
+                    to: to);
+
+            _releases =
+                JsonElementHelper.GetItems(result);
+        }
+        catch (IntegratorApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string Value(
+        JsonElement element,
+        params string[] paths)
+    {
+        return JsonElementHelper.GetString(element, paths)
+            is { Length: > 0 } value
+            ? value
+            : "—";
+    }
+}

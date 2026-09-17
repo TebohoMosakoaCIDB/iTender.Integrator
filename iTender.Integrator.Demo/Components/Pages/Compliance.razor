@@ -1,0 +1,170 @@
+﻿@page "/compliance"
+@rendermode InteractiveServer
+
+@using System.Text.Json
+@using iTender.Integrator.Demo.Helpers
+@using iTender.Integrator.Demo.Services
+
+@inject IntegratorApiClient Api
+
+<PageTitle>Compliance | iTender Integrator</PageTitle>
+
+<div class="page-header">
+    <div>
+        <div class="eyebrow">Compliance Integration</div>
+        <h1>Supplier Compliance</h1>
+        <p>
+            Demonstrate CSD supplier retrieval and compliance processing
+            through the iTender integration API.
+        </p>
+    </div>
+</div>
+
+<div class="search-card">
+
+    <label class="form-label">
+        CSD MAAA Number
+    </label>
+
+    <div class="search-row">
+
+        <input class="form-control"
+               placeholder="Enter MAAA number"
+               @bind="_maaANumber" />
+
+        <button class="btn btn-dark"
+                @onclick="LoadSupplier"
+                disabled="@_loading">
+            Check Supplier
+        </button>
+
+    </div>
+
+</div>
+
+@if (_loading)
+{
+    <div class="loading-card">
+        <div class="spinner-border"></div>
+        <div>Running supplier compliance checks...</div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">
+        @_error
+    </div>
+}
+else if (_compliance.HasValue || _csd.HasValue)
+{
+    <div class="row g-4">
+
+        <div class="col-lg-6">
+
+            <div class="section-card h-100">
+
+                <div class="section-header">
+                    <div>
+                        <div class="eyebrow">CSD</div>
+                        <h2>Supplier Profile</h2>
+                    </div>
+
+                    <span class="integration-badge">
+                        Connected
+                    </span>
+                </div>
+
+                @if (_csd.HasValue)
+                {
+                    <pre class="json-viewer">
+@JsonElementHelper.FormatJson(_csd.Value)
+                    </pre>
+                }
+
+            </div>
+
+        </div>
+
+        <div class="col-lg-6">
+
+            <div class="section-card h-100">
+
+                <div class="section-header">
+                    <div>
+                        <div class="eyebrow">CIDB</div>
+                        <h2>Compliance Result</h2>
+                    </div>
+
+                    <span class="integration-badge">
+                        Checked
+                    </span>
+                </div>
+
+                @if (_compliance.HasValue)
+                {
+                    <pre class="json-viewer">
+@JsonElementHelper.FormatJson(_compliance.Value)
+                    </pre>
+                }
+
+            </div>
+
+        </div>
+
+    </div>
+}
+
+@code {
+
+    private string _maaANumber = string.Empty;
+
+    private bool _loading;
+    private string? _error;
+
+    private JsonElement? _csd;
+    private JsonElement? _compliance;
+
+    private async Task LoadSupplier()
+    {
+        if (string.IsNullOrWhiteSpace(_maaANumber))
+        {
+            _error = "Enter a MAAA number.";
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+        _csd = null;
+        _compliance = null;
+
+        try
+        {
+            var csdTask =
+                Api.GetCsdSupplierAsync(
+                    _maaANumber.Trim());
+
+            var complianceTask =
+                Api.GetComplianceSupplierAsync(
+                    _maaANumber.Trim());
+
+            await Task.WhenAll(
+                csdTask,
+                complianceTask);
+
+            _csd = await csdTask;
+            _compliance = await complianceTask;
+        }
+        catch (IntegratorApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}

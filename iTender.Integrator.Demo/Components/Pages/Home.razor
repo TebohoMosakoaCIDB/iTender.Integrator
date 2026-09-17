@@ -1,0 +1,259 @@
+﻿@page "/"
+@rendermode InteractiveServer
+
+@using System.Text.Json
+@using iTender.Integrator.Demo.Helpers
+@using iTender.Integrator.Demo.Services
+
+@inject IntegratorApiClient Api
+
+<PageTitle>iTender Integrator</PageTitle>
+
+<div class="dashboard-header">
+    <div>
+        <div class="eyebrow">CIDB · iTender</div>
+        <h1>Integration Dashboard</h1>
+        <p>
+            National Treasury, CSD and CIDB contractor compliance integration.
+        </p>
+    </div>
+
+    <div class="api-status">
+        <span class="status-dot"></span>
+        API Connected
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="loading-card">
+        <div class="spinner-border"></div>
+        <div>Loading integration data...</div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">
+        <strong>API Error</strong>
+        <div>@_error</div>
+    </div>
+}
+else
+{
+    <div class="stats-grid">
+
+        <div class="stat-card">
+            <div class="stat-icon">T</div>
+            <div>
+                <div class="stat-label">Recent Tender Releases</div>
+                <div class="stat-value">@_releaseCount</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">C</div>
+            <div>
+                <div class="stat-label">Compliance Checked</div>
+                <div class="stat-value">@_complianceCount</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">4</div>
+            <div>
+                <div class="stat-label">Integration APIs</div>
+                <div class="stat-value">4</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon">✓</div>
+            <div>
+                <div class="stat-label">Authentication</div>
+                <div class="stat-value">API Key</div>
+            </div>
+        </div>
+
+    </div>
+
+    <div class="section-card">
+        <div class="section-header">
+            <div>
+                <h2>Integration Flow</h2>
+                <p>Current services exposed by iTender Integrator.</p>
+            </div>
+        </div>
+
+        <div class="integration-flow">
+
+            <div class="integration-node">
+                <div class="node-icon">NT</div>
+                <strong>National Treasury</strong>
+                <span>OCDS Releases</span>
+            </div>
+
+            <div class="flow-arrow">→</div>
+
+            <div class="integration-node highlight">
+                <div class="node-icon">CIDB</div>
+                <strong>iTender Integrator</strong>
+                <span>Integration API</span>
+            </div>
+
+            <div class="flow-arrow">→</div>
+
+            <div class="integration-node">
+                <div class="node-icon">CSD</div>
+                <strong>CSD</strong>
+                <span>Supplier Compliance</span>
+            </div>
+
+            <div class="flow-arrow">→</div>
+
+            <div class="integration-node">
+                <div class="node-icon">RoC</div>
+                <strong>Contractors</strong>
+                <span>Contractor Profile</span>
+            </div>
+
+        </div>
+    </div>
+
+    <div class="section-card">
+        <div class="section-header">
+            <div>
+                <h2>Latest Tender Releases</h2>
+                <p>Data retrieved from the National Treasury OCDS integration.</p>
+            </div>
+
+            <a href="/tenders" class="btn btn-dark">
+                View all
+            </a>
+        </div>
+
+        @if (_releases.Count == 0)
+        {
+            <div class="empty-state">
+                No releases were returned.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table integration-table">
+                    <thead>
+                        <tr>
+                            <th>OCID</th>
+                            <th>Title</th>
+                            <th>Buyer</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                    @foreach (var release in _releases)
+                    {
+                        <tr>
+                            <td>
+                                @GetValue(
+                                    release,
+                                    "ocid",
+                                    "id")
+                            </td>
+
+                            <td>
+                                @GetValue(
+                                    release,
+                                    "tender.title",
+                                    "title")
+                            </td>
+
+                            <td>
+                                @GetValue(
+                                    release,
+                                    "buyer.name",
+                                    "procuringEntity.name")
+                            </td>
+
+                            <td>
+                                @GetValue(
+                                    release,
+                                    "date",
+                                    "publishedDate")
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+}
+
+@code {
+
+    private bool _loading = true;
+    private string? _error;
+
+    private int _releaseCount;
+    private int _complianceCount;
+
+    private IReadOnlyList<JsonElement> _releases = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var to = DateTime.Today;
+            var from = to.AddDays(-30);
+
+            var releases =
+                await Api.GetOcdsReleasesAsync(
+                    pageNumber: 1,
+                    pageSize: 10,
+                    from: from,
+                    to: to);
+
+            var compliance =
+                await Api.GetComplianceCheckedReleasesAsync(
+                    pageNumber: 1,
+                    pageSize: 10,
+                    from: from,
+                    to: to);
+
+            _releases =
+                JsonElementHelper.GetItems(releases);
+
+            _releaseCount = _releases.Count;
+
+            _complianceCount =
+                JsonElementHelper.GetItems(compliance).Count;
+        }
+        catch (IntegratorApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static string GetValue(
+        JsonElement element,
+        params string[] paths)
+    {
+        var value =
+            JsonElementHelper.GetString(
+                element,
+                paths);
+
+        return string.IsNullOrWhiteSpace(value)
+            ? "—"
+            : value;
+    }
+}

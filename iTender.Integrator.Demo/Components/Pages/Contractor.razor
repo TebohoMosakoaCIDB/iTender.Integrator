@@ -1,0 +1,109 @@
+﻿@page "/contractor"
+@rendermode InteractiveServer
+
+@using System.Text.Json
+@using iTender.Integrator.Demo.Helpers
+@using iTender.Integrator.Demo.Services
+
+@inject IntegratorApiClient Api
+
+<PageTitle>Contractor Lookup | iTender Integrator</PageTitle>
+
+<div class="page-header">
+    <div>
+        <div class="eyebrow">CIDB</div>
+        <h1>Contractor Lookup</h1>
+        <p>Retrieve contractor information through the integration API.</p>
+    </div>
+</div>
+
+<div class="search-card">
+
+    <label class="form-label">
+        CRS Number
+    </label>
+
+    <div class="search-row">
+        <input class="form-control"
+               placeholder="Enter CRS number"
+               @bind="_crsNumber" />
+
+        <button class="btn btn-dark"
+                @onclick="Search"
+                disabled="@_loading">
+            Search
+        </button>
+    </div>
+
+</div>
+
+@if (_loading)
+{
+    <div class="loading-card">
+        <div class="spinner-border"></div>
+        <div>Retrieving contractor...</div>
+    </div>
+}
+else if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger">
+        @_error
+    </div>
+}
+else if (_result.HasValue)
+{
+    <div class="section-card">
+
+        <div class="section-header">
+            <div>
+                <h2>Contractor Profile</h2>
+                <p>Response received from the CIDB contractor endpoint.</p>
+            </div>
+        </div>
+
+        <pre class="json-viewer">@JsonElementHelper.FormatJson(_result.Value)</pre>
+
+    </div>
+}
+
+@code {
+
+    private string _crsNumber = string.Empty;
+
+    private bool _loading;
+    private string? _error;
+
+    private JsonElement? _result;
+
+    private async Task Search()
+    {
+        if (string.IsNullOrWhiteSpace(_crsNumber))
+        {
+            _error = "Enter a CRS number.";
+            return;
+        }
+
+        _loading = true;
+        _error = null;
+        _result = null;
+
+        try
+        {
+            _result =
+                await Api.GetContractorAsync(
+                    _crsNumber.Trim());
+        }
+        catch (IntegratorApiException ex)
+        {
+            _error = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            _error = ex.Message;
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+}
