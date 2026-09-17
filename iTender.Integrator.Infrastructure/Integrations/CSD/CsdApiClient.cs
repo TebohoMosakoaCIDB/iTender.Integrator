@@ -128,7 +128,7 @@ namespace iTender.Integrator.Infrastructure.Integrations.CSD
             _authentication =
                 Deserialize<AuthenticationResponse>(responseXml);
 
-            //ValidateAuthentication();
+            ValidateAuthentication();
         }
 
         private void ValidateAuthentication()
