@@ -1,0 +1,17 @@
+﻿<div class="info-item">
+    <div class="info-label">
+        @Label
+    </div>
+
+    <div class="info-value">
+        @Value
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Label { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Value { get; set; }
+}

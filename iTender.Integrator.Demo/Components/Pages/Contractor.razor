@@ -2,7 +2,7 @@
 @rendermode InteractiveServer
 
 @using System.Text.Json
-@using iTender.Integrator.Demo.Helpers
+@using iTender.Integrator.Application.DTOs.Compliance
 @using iTender.Integrator.Demo.Services
 
 @inject IntegratorApiClient Api
@@ -11,9 +11,12 @@
 
 <div class="page-header">
     <div>
-        <div class="eyebrow">CIDB</div>
+        <div class="eyebrow">CIDB · iTender Integrator</div>
         <h1>Contractor Lookup</h1>
-        <p>Retrieve contractor information through the integration API.</p>
+        <p>
+            Retrieve integrated contractor information from CIDB/iTender and
+            external supplier sources.
+        </p>
     </div>
 </div>
 
@@ -26,42 +29,943 @@
     <div class="search-row">
         <input class="form-control"
                placeholder="Enter CRS number"
-               @bind="_crsNumber" />
+               @bind="_crsNumber"
+               @onkeydown="HandleKeyDown" />
 
         <button class="btn btn-dark"
                 @onclick="Search"
                 disabled="@_loading">
-            Search
+            @if (_loading)
+            {
+                <span class="spinner-border spinner-border-sm me-2"></span>
+                <span>Searching...</span>
+            }
+            else
+            {
+                <span>Search</span>
+            }
         </button>
     </div>
 
 </div>
 
+@if (!string.IsNullOrWhiteSpace(_error))
+{
+    <div class="alert alert-danger mt-4">
+        @_error
+    </div>
+}
+
 @if (_loading)
 {
     <div class="loading-card">
         <div class="spinner-border"></div>
-        <div>Retrieving contractor...</div>
+        <div>Retrieving contractor information...</div>
     </div>
 }
-else if (!string.IsNullOrWhiteSpace(_error))
-{
-    <div class="alert alert-danger">
-        @_error
-    </div>
-}
-else if (_result.HasValue)
-{
-    <div class="section-card">
 
+@if (_profile is not null && !_loading)
+{
+    <div class="section-card mt-4">
+
+        <!-- Profile Header -->
         <div class="section-header">
             <div>
-                <h2>Contractor Profile</h2>
-                <p>Response received from the CIDB contractor endpoint.</p>
+                <div class="eyebrow">CONTRACTOR PROFILE</div>
+
+                <h2>
+                    @(Display(_profile.Csd?.SupplierIdentification.LegalName)
+                        ?? Display(_profile.Crm?.Name)
+                        ?? "Contractor")
+                </h2>
+
+                <p class="mb-0">
+                    CRS Number:
+                    <strong>@_profile.CrsNumber</strong>
+                </p>
+            </div>
+
+            <div class="d-flex gap-2">
+                @if (_profile.Crm is not null)
+                {
+                    <span class="badge bg-dark">
+                        CIDB / iTender
+                    </span>
+                }
+
+                @if (_profile.Csd is not null)
+                {
+                    <span class="badge bg-secondary">
+                        CSD
+                    </span>
+                }
             </div>
         </div>
 
-        <pre class="json-viewer">@JsonElementHelper.FormatJson(_result.Value)</pre>
+        <!-- Source information -->
+        <div class="source-summary mt-3">
+
+            @if (_profile.Crm is null)
+            {
+                <div class="alert alert-light border mb-2">
+                    <strong>CIDB / iTender:</strong>
+                    No construction contractor record was found.
+                    CSD information may still be available.
+                </div>
+            }
+
+            @if (_profile.Csd is null)
+            {
+                <div class="alert alert-light border mb-2">
+                    <strong>CSD:</strong>
+                    No CSD supplier record was found.
+                </div>
+            }
+
+        </div>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs mt-4" role="tablist">
+
+            <li class="nav-item">
+                <button class="nav-link @(_activeTab == "overview" ? "active" : "")"
+                        type="button"
+                        @onclick='() => SetTab("overview")'>
+                    Overview
+                </button>
+            </li>
+
+            <li class="nav-item">
+                <button class="nav-link @(_activeTab == "cidb" ? "active" : "")"
+                        type="button"
+                        @onclick='() => SetTab("cidb")'>
+                    CIDB / iTender
+                </button>
+            </li>
+
+            <li class="nav-item">
+                <button class="nav-link @(_activeTab == "csd" ? "active" : "")"
+                        type="button"
+                        @onclick='() => SetTab("csd")'>
+                    CSD
+                </button>
+            </li>
+
+            @if (_profile.Csd is not null)
+            {
+                <li class="nav-item">
+                    <button class="nav-link @(_activeTab == "contacts" ? "active" : "")"
+                            type="button"
+                            @onclick='() => SetTab("contacts")'>
+                        Contacts
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <button class="nav-link @(_activeTab == "banking" ? "active" : "")"
+                            type="button"
+                            @onclick='() => SetTab("banking")'>
+                        Banking
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <button class="nav-link @(_activeTab == "tax" ? "active" : "")"
+                            type="button"
+                            @onclick='() => SetTab("tax")'>
+                        Tax
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <button class="nav-link @(_activeTab == "directors" ? "active" : "")"
+                            type="button"
+                            @onclick='() => SetTab("directors")'>
+                        Directors
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <button class="nav-link @(_activeTab == "ownership" ? "active" : "")"
+                            type="button"
+                            @onclick='() => SetTab("ownership")'>
+                        Ownership
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <button class="nav-link @(_activeTab == "bbbee" ? "active" : "")"
+                            type="button"
+                            @onclick='() => SetTab("bbbee")'>
+                        B-BBEE
+                    </button>
+                </li>
+
+                <li class="nav-item">
+                    <button class="nav-link @(_activeTab == "accreditations" ? "active" : "")"
+                            type="button"
+                            @onclick='() => SetTab("accreditations")'>
+                        Accreditations
+                    </button>
+                </li>
+            }
+
+        </ul>
+
+        <div class="tab-content pt-4">
+
+            @if (_activeTab == "overview")
+            {
+                <div class="tab-pane-content">
+                    <InforItem Label="CRS Number"
+                               Value="@_profile.CrsNumber" />
+
+                    <InforItem Label="Legal Name"
+                               Value="@GetLegalName()" />
+
+                    <InforItem Label="Trading Name"
+                               Value="@GetTradingName()" />
+
+                    <InforItem Label="Supplier Number"
+                               Value="@_profile.Csd?.SupplierIdentification.SupplierNumber" />
+
+                    <InforItem Label="Company Registration"
+                               Value="@_profile.Csd?.SupplierIdentification.SACompanyNumber" />
+
+                    <InforItem Label="CSD Status"
+                               Value="@GetCsdStatus()" />
+
+                    <InforItem Label="CIDB Grade"
+                               Value="@_profile.Crm?.CurrentGrade" />
+
+                    <InforItem Label="Grading Designation"
+                               Value="@_profile.Crm?.CurrentGradingDesignation" />
+
+                               <br />
+                               <br />
+
+                    @if (!string.IsNullOrWhiteSpace(_profile.CrmLookupReason))
+                    {
+                        <div class="mt-4">
+                            <h5>CIDB / iTender Lookup</h5>
+                            <p class="text-muted">
+                                @_profile.CrmLookupReason
+                            </p>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(_profile.CsdLookupReason))
+                    {
+                        <div class="mt-3">
+                            <h5>CSD Lookup</h5>
+                            <p class="text-muted">
+                                @_profile.CsdLookupReason
+                            </p>
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_activeTab == "cidb")
+            {
+                <div class="tab-pane-content">
+                    @if (_profile.Crm is null)
+                    {
+                        <div class="empty-state">
+                            <h5>No CIDB / iTender record</h5>
+                            <p>
+                                This contractor does not have a corresponding
+                                construction contractor record in iTender.
+                            </p>
+
+                            @if (!string.IsNullOrWhiteSpace(_profile.CrmLookupReason))
+                            {
+                                <small class="text-muted">
+                                    @_profile.CrmLookupReason
+                                </small>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="info-grid">
+
+                            <InforItem Label="Contractor Name"
+                                       Value="@_profile.Crm.Name" />
+
+                            <InforItem Label="Trading As"
+                                       Value="@_profile.Crm.TradingAs" />
+
+                            <InforItem Label="Enterprise Name"
+                                       Value="@_profile.Crm.EnterpriseName" />
+
+                            <InforItem Label="Enterprise Registration Number"
+                                       Value="@_profile.Crm.EnterpriseRegistrationNumber" />
+
+                            <InforItem Label="CRS Number"
+                                       Value="@_profile.Crm.CrsNumber" />
+
+                            <InforItem Label="CSD Number"
+                                       Value="@_profile.Crm.CsdNumber" />
+
+                            <InforItem Label="Email"
+                                       Value="@_profile.Crm.Email" />
+
+                            <InforItem Label="Phone"
+                                       Value="@_profile.Crm.Phone" />
+
+                            <InforItem Label="Status"
+                                       Value="@_profile.Crm.StatusText" />
+
+                            <InforItem Label="Province"
+                                       Value="@_profile.Crm.ProvinceText" />
+
+                            <InforItem Label="Enterprise Type"
+                                       Value="@_profile.Crm.EnterpriseTypeText" />
+
+                            <InforItem Label="Current Grade"
+                                       Value="@_profile.Crm.CurrentGrade" />
+
+                            <InforItem Label="Grading Designation"
+                                       Value="@_profile.Crm.CurrentGradingDesignation" />
+
+                            <InforItem Label="Contractor Designation"
+                                       Value="@_profile.Crm.CurrentContractorGradingDesignation" />
+
+                            <InforItem Label="Annual Turnover"
+                                       Value="@FormatCurrency(_profile.Crm.AnnualTurnOver)" />
+
+                            <InforItem Label="Net Asset Value"
+                                       Value="@FormatCurrency(_profile.Crm.NetAssetValue)" />
+
+                            <InforItem Label="Largest Contract Value"
+                                       Value="@FormatCurrency(_profile.Crm.LargestContractValue)" />
+
+                            <InforItem Label="Available Capital"
+                                       Value="@FormatCurrency(_profile.Crm.AvailableCapital)" />
+
+                            <InforItem Label="Professionals"
+                                       Value="@_profile.Crm.Professionals.ToString()" />
+
+                            <InforItem Label="Activation Date"
+                                       Value="@FormatDate(_profile.Crm.ActivationDate)" />
+
+                            <InforItem Label="Renewal Due Date"
+                                       Value="@FormatDate(_profile.Crm.RenewalDueDate)" />
+
+                            <InforItem Label="Expiry Date"
+                                       Value="@FormatDate(_profile.Crm.ExpiryData)" />
+
+                            <InforItem Label="Created"
+                                       Value="@FormatDate(_profile.Crm.CreatedOn)" />
+
+                        </div>
+
+                        <div class="mt-4">
+
+                            <h5>Contractor Flags</h5>
+
+                            <div class="d-flex flex-wrap gap-2">
+
+                                @if (_profile.Crm.IsSanctioned)
+                                {
+                                    <span class="badge bg-danger">
+                                        Sanctioned
+                                    </span>
+                                }
+
+                                @if (_profile.Crm.PreviouslySanctioned)
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        Previously Sanctioned
+                                    </span>
+                                }
+
+                                @if (_profile.Crm.IsPotentiallyEmerging)
+                                {
+                                    <span class="badge bg-info text-dark">
+                                        Potentially Emerging
+                                    </span>
+                                }
+
+                                @if (_profile.Crm.IsMoratorium)
+                                {
+                                    <span class="badge bg-warning text-dark">
+                                        Moratorium
+                                    </span>
+                                }
+
+                                @if (_profile.Crm.EElicense)
+                                {
+                                    <span class="badge bg-secondary">
+                                        EE Licence
+                                    </span>
+                                }
+
+                            </div>
+
+                        </div>
+
+                        @if (_profile.Crm.BankingDetails is not null)
+                        {
+                            <div class="mt-4">
+
+                                <h5>Banking Details</h5>
+
+                                <div class="info-grid">
+
+                                    <InforItem Label="Bank"
+                                               Value="@_profile.Crm.BankingDetails.BankName" />
+
+                                    <InforItem Label="Account Holder"
+                                               Value="@_profile.Crm.BankingDetails.BankAccountName" />
+
+                                    <InforItem Label="Account Number"
+                                               Value="@_profile.Crm.BankingDetails.BankAccountNumber" />
+
+                                    <InforItem Label="Branch"
+                                               Value="@_profile.Crm.BankingDetails.BranchCode" />
+
+                                </div>
+
+                            </div>
+                        }
+                    }
+                </div>
+            }
+
+            @if (_activeTab == "csd")
+            {
+                <div class="tab-pane-content">
+                    @if (_profile.Csd is null)
+                    {
+                        <div class="empty-state">
+                            <h5>No CSD supplier record</h5>
+                            <p>
+                                No supplier information was returned from the
+                                Central Supplier Database.
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        var supplier = _profile.Csd.SupplierIdentification;
+
+                        <div class="info-grid">
+
+                            <InforItem Label="Supplier Number"
+                                       Value="@supplier.SupplierNumber" />
+
+                            <InforItem Label="Legal Name"
+                                       Value="@supplier.LegalName" />
+
+                            <InforItem Label="Trading Name"
+                                       Value="@supplier.TradingName" />
+
+                            <InforItem Label="SA Company Number"
+                                       Value="@supplier.SACompanyNumber" />
+
+                            <InforItem Label="Supplier Type"
+                                       Value="@supplier.SupplierTypeCode" />
+
+                            <InforItem Label="Supplier Sub-Type"
+                                       Value="@supplier.SupplierSubTypeCode" />
+
+                            <InforItem Label="Government Type"
+                                       Value="@supplier.GovernmentTypeCode" />
+
+                            <InforItem Label="Country of Origin"
+                                       Value="@supplier.CountryOfOriginCode" />
+
+                            <InforItem Label="Business Status"
+                                       Value="@supplier.BusinessStatusCode" />
+
+                            <InforItem Label="Annual Turnover Code"
+                                       Value="@supplier.TotalAnnualTurnoverCode" />
+
+                            <InforItem Label="Registration Date"
+                                       Value="@FormatDate(supplier.RegistrationDate)" />
+
+                            <InforItem Label="Operations Started"
+                                       Value="@FormatDate(supplier.DateOperationsStarted)" />
+
+                            <InforItem Label="Financial Year Start"
+                                       Value="@FormatDate(supplier.FinancialYearStartDate)" />
+
+                            <InforItem Label="Created"
+                                       Value="@FormatDate(supplier.CreatedDate)" />
+
+                            <InforItem Label="Last Edited"
+                                       Value="@FormatDate(supplier.EditDate)" />
+
+                            <InforItem Label="Bank Account"
+                                       Value="@(supplier.HaveBankAccount ? "Yes" : "No")" />
+
+                            <InforItem Label="Active"
+                                       Value="@(supplier.IsActive ? "Yes" : "No")" />
+
+                        </div>
+                    }
+                </div>
+            }
+
+            @if (_activeTab == "contacts" && _profile.Csd is not null)
+            {
+                <div class="tab-pane-content">
+                    <div class="tab-pane fade"
+                         id="contacts">
+
+                        @if (_profile.Csd.Contacts.Count == 0)
+                        {
+                            <div class="empty-state">
+                                No contacts were returned.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+
+                                <table class="table table-hover align-middle">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Preferred</th>
+                                            <th>Email</th>
+                                            <th>Cellphone</th>
+                                            <th>Telephone</th>
+                                            <th>Active</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                        @foreach (var contact in _profile.Csd.Contacts)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>
+                                                        @contact.Name @contact.Surname
+                                                    </strong>
+                                                </td>
+
+                                                <td>
+                                                    @if (contact.IsPreferred)
+                                                    {
+                                                        <span class="badge bg-dark">
+                                                            Preferred
+                                                        </span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-muted">
+                                                            No
+                                                        </span>
+                                                    }
+                                                </td>
+
+                                                <td>
+                                                    @Display(contact.EmailAddress)
+                                                </td>
+
+                                                <td>
+                                                    @Display(contact.CellphoneNumber)
+                                                </td>
+
+                                                <td>
+                                                    @Display(contact.TelephoneNumber)
+                                                </td>
+
+                                                <td>
+                                                    @(contact.IsActive ? "Yes" : "No")
+                                                </td>
+                                            </tr>
+                                        }
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            }
+
+            @if (_activeTab == "banking" && _profile.Csd is not null)
+            {
+                <div class="tab-pane-content">
+                    <div class="tab-pane fade"
+                         id="banking">
+
+                        @if (_profile.Csd.BankAccounts.Count == 0)
+                        {
+                            <div class="empty-state">
+                                No bank accounts were returned.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+
+                                <table class="table table-hover align-middle">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Bank</th>
+                                            <th>Account Holder</th>
+                                            <th>Account Number</th>
+                                            <th>Type</th>
+                                            <th>Branch</th>
+                                            <th>Status</th>
+                                            <th>Preferred</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                        @foreach (var account in _profile.Csd.BankAccounts)
+                                        {
+                                            <tr>
+                                                <td>@Display(account.BankName)</td>
+                                                <td>@Display(account.AccountHolder)</td>
+                                                <td>@Display(account.AccountNumber)</td>
+                                                <td>@Display(account.BankAccountTypeCode)</td>
+                                                <td>@Display(account.BranchName)</td>
+                                                <td>@Display(account.BankAccountStatusCode)</td>
+                                                <td>
+                                                    @(account.IsPreferred == true ? "Yes" : "No")
+                                                </td>
+                                            </tr>
+                                        }
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+                        }
+
+                    </div>
+
+                </div>
+            }
+
+            @if (_activeTab == "tax" && _profile.Csd is not null)
+            {
+                <div class="tab-pane-content">
+                    <div class="tab-pane fade"
+                         id="tax">
+
+                        <div class="info-grid">
+
+                            <InforItem Label="Tax Registered"
+                                       Value="@(_profile.Csd.Tax.IsRegistered ? "Yes" : "No")" />
+
+                            <InforItem Label="VAT Vendor"
+                                       Value="@(_profile.Csd.Tax.IsVATVendor ? "Yes" : "No")" />
+
+                            <InforItem Label="Income Tax Number"
+                                       Value="@_profile.Csd.Tax.IncomeTaxNumber" />
+
+                            <InforItem Label="PAYE Number"
+                                       Value="@_profile.Csd.Tax.PAYENumber" />
+
+                            <InforItem Label="VAT Number"
+                                       Value="@_profile.Csd.Tax.VATNumber" />
+
+                            <InforItem Label="Valid Certificate"
+                                       Value="@(_profile.Csd.Tax.IsValidCertificate ? "Yes" : "No")" />
+
+                            <InforItem Label="Last Verification"
+                                       Value="@FormatDate(_profile.Csd.Tax.LastVerificationDate)" />
+
+                            <InforItem Label="Validation Response"
+                                       Value="@_profile.Csd.Tax.ValidationResponse" />
+
+                        </div>
+
+                    </div>
+
+                </div>
+            }
+
+            @if (_activeTab == "directors" && _profile.Csd is not null)
+            {
+                <div class="tab-pane-content">
+                    <div class="tab-pane fade"
+                         id="directors">
+
+                        @if (_profile.Csd.Directors.Count == 0)
+                        {
+                            <div class="empty-state">
+                                No directors were returned.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+
+                                <table class="table table-hover align-middle">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Name</th>
+                                            <th>Status</th>
+                                            <th>Appointment</th>
+                                            <th>Owner</th>
+                                            <th>Ownership</th>
+                                            <th>ID Type</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                        @foreach (var director in _profile.Csd.Directors)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    <strong>
+                                                        @director.Name @director.Surname
+                                                    </strong>
+                                                </td>
+
+                                                <td>
+                                                    @Display(director.DirectorStatusTypeCode)
+                                                </td>
+
+                                                <td>
+                                                    @FormatDate(director.AppointmentDate)
+                                                </td>
+
+                                                <td>
+                                                    @(director.IsOwner ? "Yes" : "No")
+                                                </td>
+
+                                                <td>
+                                                    @director.OwnershipPercentage.ToString("0.##")%
+                                                </td>
+
+                                                <td>
+                                                    @Display(director.IDTypeCode)
+                                                </td>
+                                            </tr>
+                                        }
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            }
+
+            @if (_activeTab == "ownership" && _profile.Csd is not null)
+            {
+                <div class="tab-pane-content">
+                    <div class="tab-pane fade"
+                         id="ownership">
+
+                        @if (_profile.Csd.OwnershipNonNaturals.Count == 0)
+                        {
+                            <div class="empty-state">
+                                No non-natural ownership records were returned.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+
+                                <table class="table table-hover align-middle">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Supplier Number</th>
+                                            <th>Legal Name</th>
+                                            <th>Trading Name</th>
+                                            <th>Shares / Interest</th>
+                                            <th>Active</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                        @foreach (var owner in _profile.Csd.OwnershipNonNaturals)
+                                        {
+                                            <tr>
+                                                <td>@Display(owner.SupplierNumber)</td>
+                                                <td>@Display(owner.LegalName)</td>
+                                                <td>@Display(owner.TradingName)</td>
+                                                <td>
+                                                    @owner.SharesInterestPercentage.ToString("0.##")%
+                                                </td>
+                                                <td>
+                                                    @(owner.IsActive ? "Yes" : "No")
+                                                </td>
+                                            </tr>
+                                        }
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            }
+
+            @if (_activeTab == "bbbee" && _profile.Csd is not null)
+            {
+                <div class="tab-pane-content">
+                    <div class="tab-pane fade"
+                         id="bbbee">
+
+                        @if (_profile.Csd.BBBEE is null)
+                        {
+                            <div class="empty-state">
+                                No B-BBEE information was returned.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="info-grid">
+
+                                <InforItem Label="Certificate Type"
+                                           Value="@_profile.Csd.BBBEE.CertificateTypeCode" />
+
+                                <InforItem Label="Certificate Number"
+                                           Value="@_profile.Csd.BBBEE.CertificateNumber" />
+
+                                <InforItem Label="Contributor Level"
+                                           Value="@_profile.Csd.BBBEE.StatusLevelOfContributorCode" />
+
+                                <InforItem Label="Verification Regulator"
+                                           Value="@_profile.Csd.BBBEE.VerificationRegulatorCode" />
+
+                                <InforItem Label="Certificate Issue Date"
+                                           Value="@FormatDate(_profile.Csd.BBBEE.CertificateIssueDate)" />
+
+                                <InforItem Label="Certificate Expiry Date"
+                                           Value="@FormatDate(_profile.Csd.BBBEE.CertificateExpiryDate)" />
+
+                                <InforItem Label="Black Ownership"
+                                           Value="@FormatPercentage(_profile.Csd.BBBEE.BlackOwnership)" />
+
+                                <InforItem Label="Black Woman Ownership"
+                                           Value="@FormatPercentage(_profile.Csd.BBBEE.BlackWomanOwnership)" />
+
+                                <InforItem Label="Ownership Score"
+                                           Value="@_profile.Csd.BBBEE.OwnershipScore.ToString("0.##")" />
+
+                                <InforItem Label="Management Control"
+                                           Value="@_profile.Csd.BBBEE.ManagementControlScore.ToString("0.##")" />
+
+                                <InforItem Label="Employment Equity"
+                                           Value="@_profile.Csd.BBBEE.EmploymentEquityScore.ToString("0.##")" />
+
+                                <InforItem Label="Skills Development"
+                                           Value="@_profile.Csd.BBBEE.SkillsDevelopmentScore.ToString("0.##")" />
+
+                                <InforItem Label="Preferential Procurement"
+                                           Value="@_profile.Csd.BBBEE.PreferentialProcurementScore.ToString("0.##")" />
+
+                                <InforItem Label="Enterprise Development"
+                                           Value="@_profile.Csd.BBBEE.EnterpriseDevelopmentScore.ToString("0.##")" />
+
+                                <InforItem Label="Socio-Economic Development"
+                                           Value="@_profile.Csd.BBBEE.SocioEconomicDevelopmentScore.ToString("0.##")" />
+
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            }
+
+            @if (_activeTab == "accreditations" && _profile.Csd is not null)
+            {
+                <div class="tab-pane-content">
+                    <div class="tab-pane fade"
+                         id="accreditations">
+
+                        @if (_profile.Csd.Accreditations.Count == 0)
+                        {
+                            <div class="empty-state">
+                                No accreditations were returned.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="table-responsive">
+
+                                <table class="table table-hover align-middle">
+
+                                    <thead>
+                                        <tr>
+                                            <th>Number</th>
+                                            <th>Description</th>
+                                            <th>Body</th>
+                                            <th>Registration</th>
+                                            <th>Expiry</th>
+                                            <th>Verified</th>
+                                            <th>Active</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                        @foreach (var accreditation in _profile.Csd.Accreditations)
+                                        {
+                                            <tr>
+                                                <td>
+                                                    @Display(accreditation.AccreditationNumber)
+                                                </td>
+
+                                                <td>
+                                                    @Display(accreditation.Description)
+                                                </td>
+
+                                                <td>
+                                                    @Display(
+                                                        accreditation.AccreditationBody?.AccreditationBodyCode)
+                                                </td>
+
+                                                <td>
+                                                    @FormatDate(accreditation.RegistrationDate)
+                                                </td>
+
+                                                <td>
+                                                    @FormatDate(accreditation.ExpiryDate)
+                                                </td>
+
+                                                <td>
+                                                    @(accreditation.IsVerified ? "Yes" : "No")
+                                                </td>
+
+                                                <td>
+                                                    @(accreditation.IsActive ? "Yes" : "No")
+                                                </td>
+                                            </tr>
+                                        }
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            }
+
+        </div>
 
     </div>
 }
@@ -73,7 +977,14 @@ else if (_result.HasValue)
     private bool _loading;
     private string? _error;
 
-    private JsonElement? _result;
+    private ContractorFullProfile? _profile;
+
+    private string _activeTab = "overview";
+
+    private void SetTab(string tab)
+    {
+        _activeTab = tab;
+    }
 
     private async Task Search()
     {
@@ -85,13 +996,20 @@ else if (_result.HasValue)
 
         _loading = true;
         _error = null;
-        _result = null;
+        _profile = null;
+        _activeTab = "overview";
 
         try
         {
-            _result =
+            var result =
                 await Api.GetContractorAsync(
                     _crsNumber.Trim());
+
+            _profile = result.Deserialize<ContractorFullProfile>(
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
         }
         catch (IntegratorApiException ex)
         {
@@ -106,4 +1024,67 @@ else if (_result.HasValue)
             _loading = false;
         }
     }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await Search();
+        }
+    }
+
+    private string? GetLegalName()
+    {
+        return Display(_profile?.Csd?.SupplierIdentification.LegalName)
+            ?? Display(_profile?.Crm?.EnterpriseName)
+            ?? Display(_profile?.Crm?.Name);
+    }
+
+    private string? GetTradingName()
+    {
+        return Display(_profile?.Csd?.SupplierIdentification.TradingName)
+            ?? Display(_profile?.Crm?.TradingAs);
+    }
+
+    private string GetCsdStatus()
+    {
+        if (_profile?.Csd is null)
+            return "Not found";
+
+        var identification = _profile.Csd.SupplierIdentification;
+
+        if (!identification.IsActive)
+            return identification.SupplierInactiveReason ?? "Inactive";
+
+        return identification.BusinessStatusCode ?? "Active";
+    }
+
+    private static string Display(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? "—"
+            : value;
+    }
+
+    private static string FormatDate(DateTime? value)
+    {
+        return value.HasValue
+            ? value.Value.ToString("dd MMM yyyy")
+            : "—";
+    }
+
+    private static string FormatCurrency(decimal value)
+    {
+        return value.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-ZA"));
+    }
+
+    private static string FormatPercentage(decimal value)
+    {
+        return $"{value:0.##}%";
+    }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
 }
+
