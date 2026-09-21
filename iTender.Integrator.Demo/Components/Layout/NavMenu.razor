@@ -1,4 +1,6 @@
 ﻿@* NavMenu.razor *@
+@inject iTender.Integrator.Demo.Services.ContractorAuthService Auth
+@inject NavigationManager Nav
 
 <div class="top-row ps-3 navbar navbar-dark bg-dark">
     <div class="container-fluid">
@@ -74,5 +76,29 @@
             </NavLink>
         </div>
 
+        @if (Auth.IsAuthenticated)
+        {
+            <div class="nav-user">
+                <div class="nav-user-avatar">
+                    <i class="bi bi-person-circle"></i>
+                </div>
+                <div class="nav-user-info">
+                    <div class="nav-user-name">@Auth.Current!.DisplayName</div>
+                    <div class="nav-user-crs">CRS: @Auth.Current.CrsNumber</div>
+                </div>
+                <button class="nav-user-logout" @onclick="SignOut" title="Sign out">
+                    <i class="bi bi-box-arrow-right"></i>
+                </button>
+            </div>
+        }
+
     </nav>
 </div>
+
+@code {
+    private async Task SignOut()
+    {
+        await Auth.LogoutAsync();
+        Nav.NavigateTo("/login", replace: true);
+    }
+}

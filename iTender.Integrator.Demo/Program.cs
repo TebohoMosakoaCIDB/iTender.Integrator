@@ -40,6 +40,9 @@ builder.Services.AddHttpClient<IntegratorApiClient>(
         client.Timeout = TimeSpan.FromSeconds(60);
     })
     .AddHttpMessageHandler<IntegratorApiKeyHandler>();
+builder.Services.AddScoped<ContractorAuthService>();
+
+builder.Services.AddServerSideBlazor();
 
 var app = builder.Build();
 

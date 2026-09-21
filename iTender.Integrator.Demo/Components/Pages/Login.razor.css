@@ -1,0 +1,172 @@
+/* CSS for Login component */
+/* Login.razor.css */
+
+.login-shell {
+    display: flex;
+    min-height: 100vh;
+    background-color: #f8f9fa;
+}
+
+/* ============================================================
+   Left: Visual Panel
+   ============================================================ */
+.login-visual {
+    flex: 0 0 45%;
+    background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+    color: #ffffff;
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+    .login-visual::after {
+        content: "";
+        position: absolute;
+        bottom: -40%;
+        right: -20%;
+        width: 80%;
+        height: 80%;
+        background: radial-gradient(circle, rgba(200, 16, 46, 0.18) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
+    .brand i {
+        font-size: 1.75rem;
+        color: #c8102e;
+    }
+
+.visual-caption h2 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    line-height: 1.25;
+    margin-bottom: 0.75rem;
+}
+
+.visual-caption p {
+    font-size: 1rem;
+    color: #cbd5e1;
+    max-width: 22rem;
+    margin: 0;
+}
+
+/* ============================================================
+   Right: Form Panel
+   ============================================================ */
+.login-panel {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.login-card {
+    width: 100%;
+    max-width: 26rem;
+    background-color: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.08);
+    padding: 2.5rem 2.25rem;
+}
+
+    .login-card h3 {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.4rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .login-card .form-label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+    }
+
+    .login-card .form-control {
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        padding: 0.75rem 0.9rem;
+        font-size: 0.95rem;
+        transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+        .login-card .form-control:focus {
+            border-color: #c8102e;
+            box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.12);
+        }
+
+    .login-card .btn-danger {
+        background-color: #c8102e;
+        border-color: #c8102e;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        padding: 0.75rem 1rem;
+        border-radius: 6px;
+        transition: background-color 0.15s;
+    }
+
+        .login-card .btn-danger:hover:not(:disabled) {
+            background-color: #a10d26;
+            border-color: #a10d26;
+        }
+
+    .login-card .alert {
+        border-radius: 6px;
+        font-size: 0.9rem;
+        padding: 0.75rem 1rem;
+    }
+
+/* ============================================================
+   Footer Links
+   ============================================================ */
+.login-footer {
+    text-align: center;
+    font-size: 0.85rem;
+}
+
+    .login-footer a {
+        color: #c8102e;
+        text-decoration: none;
+        font-weight: 600;
+    }
+
+        .login-footer a:hover {
+            text-decoration: underline;
+        }
+
+    .login-footer .separator {
+        color: #d1d5db;
+        margin: 0 0.5rem;
+    }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 991.98px) {
+    .login-visual {
+        display: none;
+    }
+
+    .login-panel {
+        background: linear-gradient(160deg, #1e293b 0%, #0f172a 100%);
+    }
+
+    .login-card {
+        max-width: 100%;
+    }
+}

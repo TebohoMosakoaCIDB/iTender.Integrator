@@ -1,0 +1,424 @@
+/* CSS for Home component */
+/* Home.razor.css */
+
+.dashboard-container {
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* ============================================================
+   Header
+   ============================================================ */
+.dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+    .dashboard-header .eyebrow {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 700;
+        color: #c8102e;
+        margin-bottom: 0.35rem;
+    }
+
+    .dashboard-header h1 {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.6rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .dashboard-header p {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin-bottom: 0;
+    }
+
+.crs-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background-color: #e5e7eb;
+    color: #374151;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25em 0.65em;
+    border-radius: 4px;
+    margin-left: 0.5rem;
+    font-family: 'Courier New', monospace;
+}
+
+.api-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #10b981;
+    background-color: #ecfdf5;
+    padding: 0.4rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid #a7f3d0;
+}
+
+.status-dot {
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background-color: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+/* ============================================================
+   Stat Cards
+   ============================================================ */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    position: relative;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+.stat-icon {
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #ffffff;
+    flex-shrink: 0;
+}
+
+.bg-navy {
+    background-color: #1e293b;
+}
+
+.bg-success {
+    background-color: #10b981;
+}
+
+.stat-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1;
+}
+
+.stat-link {
+    position: absolute;
+    right: 1rem;
+    bottom: 0.85rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-decoration: none;
+}
+
+    .stat-link:hover {
+        color: #c8102e;
+    }
+
+/* ============================================================
+   Section Cards
+   ============================================================ */
+.section-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+    .section-header h2 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.15rem;
+    }
+
+    .section-header p {
+        font-size: 0.82rem;
+        color: #6b7280;
+        margin-bottom: 0;
+    }
+
+/* ============================================================
+   Compliance Hero
+   ============================================================ */
+.compliance-hero {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1rem 1.15rem;
+    border-radius: 8px;
+    border-left: 4px solid #e5e7eb;
+    margin-bottom: 1rem;
+}
+
+    .compliance-hero > i {
+        font-size: 1.75rem;
+        flex-shrink: 0;
+    }
+
+.status-compliant {
+    background-color: #ecfdf5;
+    border-left-color: #10b981;
+}
+
+    .status-compliant > i {
+        color: #10b981;
+    }
+
+.status-warning {
+    background-color: #fffbeb;
+    border-left-color: #f59e0b;
+}
+
+    .status-warning > i {
+        color: #f59e0b;
+    }
+
+.status-noncompliant {
+    background-color: #fef2f2;
+    border-left-color: #c8102e;
+}
+
+    .status-noncompliant > i {
+        color: #c8102e;
+    }
+
+.status-neutral {
+    background-color: #f3f4f6;
+    border-left-color: #9ca3af;
+}
+
+    .status-neutral > i {
+        color: #6b7280;
+    }
+
+.compliance-status-text {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #1e293b;
+}
+
+.compliance-reason {
+    font-size: 0.82rem;
+    color: #4b5563;
+    margin-top: 0.15rem;
+}
+
+.compliance-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.85rem;
+    color: #374151;
+}
+
+    .compliance-list li {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.35rem 0;
+    }
+
+    .compliance-list i {
+        font-size: 1rem;
+    }
+
+/* ============================================================
+   Table
+   ============================================================ */
+.integration-table {
+    margin-bottom: 0;
+    font-size: 0.85rem;
+}
+
+    .integration-table thead th {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        font-weight: 700;
+        border-bottom: 2px solid #e5e7eb;
+        border-top: none;
+        padding: 0.65rem 0.75rem;
+        background-color: #f9fafb;
+        white-space: nowrap;
+    }
+
+    .integration-table tbody td {
+        font-size: 0.85rem;
+        color: #374151;
+        vertical-align: middle;
+        padding: 0.75rem;
+        border-color: #f3f4f6;
+    }
+
+    .integration-table tbody tr:hover {
+        background-color: #f9fafb;
+    }
+
+/* ============================================================
+   Integration Flow
+   ============================================================ */
+.integration-flow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.integration-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.35rem;
+    flex: 1;
+    min-width: 7rem;
+}
+
+    .integration-node .node-icon {
+        width: 3rem;
+        height: 3rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        background-color: #e5e7eb;
+        color: #1e293b;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+
+    .integration-node.highlight .node-icon {
+        background-color: #c8102e;
+        color: #ffffff;
+    }
+
+    .integration-node strong {
+        font-size: 0.82rem;
+        color: #1e293b;
+    }
+
+    .integration-node span {
+        font-size: 0.72rem;
+        color: #6b7280;
+    }
+
+.flow-arrow {
+    color: #9ca3af;
+    font-size: 1.25rem;
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   Empty / Loading
+   ============================================================ */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #9ca3af;
+}
+
+    .empty-state i {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+.loading-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 2.5rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.spinner-border {
+    color: #c8102e;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 991.98px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .dashboard-container {
+        padding: 1rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .integration-flow {
+        flex-direction: column;
+    }
+
+    .flow-arrow {
+        transform: rotate(90deg);
+    }
+}

@@ -95,3 +95,50 @@
         overflow-y: auto;
     }
 }
+
+.nav-user {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1rem 1rem 1rem 1.25rem;
+    margin-top: auto;
+    border-top: 1px solid #1b263b;
+    color: #e5e7eb;
+    font-size: 0.82rem;
+}
+
+.nav-user-avatar i {
+    font-size: 1.75rem;
+    color: #c8102e;
+}
+
+.nav-user-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.nav-user-name {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.nav-user-crs {
+    font-size: 0.72rem;
+    color: #94a3b8;
+}
+
+.nav-user-logout {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    padding: 0.25rem;
+    cursor: pointer;
+    transition: color 0.15s;
+}
+
+    .nav-user-logout:hover {
+        color: #c8102e;
+    }

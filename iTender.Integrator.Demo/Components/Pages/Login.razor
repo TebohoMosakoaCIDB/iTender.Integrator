@@ -1,0 +1,122 @@
+﻿@* Components/Pages/Login.razor *@
+@page "/login"
+@rendermode InteractiveServer
+@using iTender.Integrator.Demo.Services
+@inject ContractorAuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Sign In | iBidder</PageTitle>
+
+<div class="login-shell">
+
+    <!-- Left: visual panel -->
+    <div class="login-visual">
+        <div class="brand">
+            <i class="bi bi-buildings"></i>
+            <span>CIDB - iBidder</span>
+        </div>
+        <div class="visual-caption">
+            <h2>Construction Industry Development Board</h2>
+            <p>Register once. Comply once. Participate everywhere.</p>
+        </div>
+    </div>
+
+    <!-- Right: form panel -->
+    <div class="login-panel">
+        <div class="login-card">
+            <h3>Contractor Sign In</h3>
+            <p class="text-muted mb-4">
+                Enter your CRS number to continue.
+            </p>
+
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="alert alert-danger">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    @error
+                </div>
+            }
+
+            <div class="mb-3">
+                <label class="form-label">CRS Number</label>
+                <input class="form-control"
+                       placeholder="e.g. 2015/123456/07"
+                       @bind="crsNumber"
+                       @bind:event="oninput"
+                       @onkeyup="OnKeyUp"
+                       disabled="@isBusy" />
+            </div>
+
+            <button class="btn btn-danger w-100"
+                    @onclick="SignIn"
+                    disabled="@isBusy">
+                @if (isBusy)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                    <span>Signing in...</span>
+                }
+                else
+                {
+                    <span>LOGIN</span>
+                }
+            </button>
+
+            <div class="login-footer mt-4">
+                <a href="/register">Register a new contractor</a>
+                <span class="separator">·</span>
+                <a href="/help">Need help?</a>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+@code {
+    private string crsNumber = string.Empty;
+    private string? error;
+    private bool isBusy;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Auth.RestoreAsync();
+
+        if (Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo("/", replace: true);
+        }
+    }
+
+    private async Task OnKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !isBusy)
+        {
+            await SignIn();
+        }
+    }
+
+    private async Task SignIn()
+    {
+        if (isBusy) return;
+
+        isBusy = true;
+        error = null;
+
+        try
+        {
+            var result = await Auth.LoginAsync(crsNumber);
+
+            if (result.Success)
+            {
+                Nav.NavigateTo("/", replace: true);
+            }
+            else
+            {
+                error = result.ErrorMessage;
+            }
+        }
+        finally
+        {
+            isBusy = false;
+        }
+    }
+}
