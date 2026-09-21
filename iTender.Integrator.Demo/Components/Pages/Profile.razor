@@ -1,0 +1,416 @@
+﻿@* Pages/Profile.razor *@
+@page "/profile/{CrsNumber}"
+@using System.Text.Json
+@using iTender.Integrator.Application.DTOs.Compliance
+@using iTender.Integrator.Demo.Services
+@rendermode InteractiveServer
+
+
+@inject IntegratorApiClient Api
+
+<div class="profile-container">
+    <div class="page-header mb-4 d-flex justify-content-between align-items-center">
+        <div>
+            <h2>My Profile</h2>
+            <p class="text-muted mb-0">Manage your company information and compliance details.</p>
+        </div>
+        <span class="badge bg-primary fs-6">CRS: @CrsNumber</span>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2 text-muted">Loading profile data...</p>
+        </div>
+    }
+    else if (profile == null)
+    {
+        <div class="alert alert-danger">Could not load profile for CRS: @CrsNumber</div>
+    }
+    else
+    {
+        <div class="row">
+            <!-- LEFT SIDEBAR: Navigation -->
+            <div class="col-md-3">
+                <div class="list-group profile-nav">
+                    <button class="list-group-item list-group-item-action @IsActive("company")"
+                            @onclick='() => SelectTab("company")'>
+                        <i class="bi bi-building me-2"></i> Company Information
+                    </button>
+                    <button class="list-group-item list-group-item-action @IsActive("directors")"
+                            @onclick='() => SelectTab("directors")'>
+                        <i class="bi bi-people me-2"></i> Directors
+                    </button>
+                    <button class="list-group-item list-group-item-action @IsActive("cibd")"
+                            @onclick='() => SelectTab("cibd")'>
+                        <i class="bi bi-award me-2"></i> CIBD Details
+                    </button>
+                    <button class="list-group-item list-group-item-action @IsActive("address")"
+                            @onclick='() => SelectTab("address")'>
+                        <i class="bi bi-award me-2"></i> Address
+                    </button>
+                    <button class="list-group-item list-group-item-action @IsActive("banking")"
+                            @onclick='() => SelectTab("banking")'>
+                        <i class="bi bi-bank me-2"></i> Banking Details
+                    </button>
+                    <button class="list-group-item list-group-item-action @IsActive("tax")"
+                            @onclick='() => SelectTab("tax")'>
+                        <i class="bi bi-receipt me-2"></i> Tax &amp; B-BBEE
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT CONTENT: Display Area -->
+            <div class="col-md-9">
+                <div class="card profile-card">
+                    <div class="card-body">
+
+                        @if (activeTab == "company")
+                        {
+                            <h5 class="card-title mb-4">Company Information</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="info-group">
+                                        <label>Legal Name</label>
+                                        <p>@(profile.Csd?.SupplierIdentification?.LegalName ?? profile.Crm?.EnterpriseName ?? "N/A")</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Trading Name</label>
+                                        <p>@(profile.Crm?.TradingAs ?? "N/A")</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Registration Number</label>
+                                        <p>@(profile.Csd?.SupplierIdentification?.SACompanyNumber ?? profile.Crm?.EnterpriseRegistrationNumber ?? "N/A")</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>CSD Number</label>
+                                        <p>@(profile.Csd?.SupplierIdentification?.SupplierNumber ?? profile.Crm?.CsdNumber ?? "N/A")</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-group">
+                                        <label>Enterprise Type</label>
+                                        <p>@(profile.Crm?.EnterpriseTypeText ?? "N/A")</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Province</label>
+                                        <p>@(profile.Crm?.ProvinceText ?? "N/A")</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Contact Person</label>
+                                        <p>@(profile.Csd?.Contacts[0].Name ?? "N/A")</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Contact Email</label>
+                                        <p>@(profile.Csd?.Contacts[0].EmailAddress ?? "N/A")</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (activeTab == "directors")
+                        {
+                            <h5 class="card-title mb-4">Directors & Ownership</h5>
+                            @if (profile.Csd?.Directors?.Any() == true)
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>ID Number</th>
+                                                <th>Appointment Date</th>
+                                                <th>Ownership %</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var director in profile.Csd.Directors)
+                                            {
+                                                <tr>
+                                                    <td>@director.Name @director.Surname</td>
+                                                    <td>@(director.SAIDNumber ?? director.ForeignIDNumber ?? "N/A")</td>
+                                                    <td>@director.AppointmentDate?.ToString("dd MMM yyyy")</td>
+                                                    <td>@director.OwnershipPercentage.ToString("0.00")%</td>
+                                                    <td>
+                                                        @if (director.IsActive)
+                                                        {
+                                                            <span class="badge bg-success">Active</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="badge bg-secondary">Inactive</span>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted">No director information available from CSD.</p>
+                            }
+                        }
+                        else if (activeTab == "cibd")
+                        {
+                            <h5 class="card-title mb-4">CIBD Grading Details</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="info-group">
+                                        <label>Is PE</label>
+                                        <p>@(profile.Crm?.IsPotentiallyEmerging)</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>is Moratorium</label>
+                                        <p>@(profile.Crm?.IsMoratorium)</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-group">
+                                        <label>Is Sanctioned</label>
+                                        <p>@(profile.Crm?.IsSanctioned)</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Previously Sanctioned</label>
+                                        <p>@(profile.Crm?.PreviouslySanctioned)</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-group">
+                                        <label>Status</label>
+                                        <p>@(profile.Crm?.StatusText)</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Grading Designation</label>
+                                        <p>@(profile.Crm?.CurrentGradingDesignation ?? "N/A")</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="info-group">
+                                        <label>Annual Turnover</label>
+                                        <p>@profile.Crm?.AnnualTurnOver.ToString("C0", new System.Globalization.CultureInfo("en-ZA"))</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Available Capital</label>
+                                        <p>@profile.Crm?.AvailableCapital.ToString("C0", new System.Globalization.CultureInfo("en-ZA"))</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (activeTab == "address")
+                        {
+                            <h5 class="card-title mb-4">Addresses</h5>
+
+                            @if (profile.Csd?.Addresses?.Any() == true)
+                            {
+                                var physical = profile.Csd.Addresses.FirstOrDefault(a => a.IsPhysicalAddress)
+                                               ?? profile.Csd.Addresses.FirstOrDefault(a => a.IsPreferred);
+                                var postal = profile.Csd.Addresses.FirstOrDefault(a => a.IsPostalAddress);
+
+                                <div class="row">
+                                    @if (physical is not null)
+                                    {
+                                        <div class="col-md-6">
+                                            <h6 class="text-muted mb-3">
+                                                <i class="bi bi-geo-alt-fill me-1"></i> Physical Address
+                                            </h6>
+                                            <div class="info-group">
+                                                <label>Address Line 1</label>
+                                                <p>@(physical.AddressLine1 ?? "N/A")</p>
+                                            </div>
+                                            <div class="info-group">
+                                                <label>Address Line 2</label>
+                                                <p>@(physical.AddressLine2 ?? "N/A")</p>
+                                            </div>
+                                            <div class="info-group">
+                                                <label>Province</label>
+                                                <p>@(physical.ProvinceCode ?? "N/A")</p>
+                                            </div>
+                                            <div class="info-group">
+                                                <label>Postal Code</label>
+                                                <p>@(physical.PostalCode ?? "N/A")</p>
+                                            </div>
+                                        </div>
+                                    }
+
+                                    @if (postal is not null)
+                                    {
+                                        <div class="col-md-6">
+                                            <h6 class="text-muted mb-3">
+                                                <i class="bi bi-envelope-fill me-1"></i> Postal Address
+                                            </h6>
+                                            <div class="info-group">
+                                                <label>Address Line 1</label>
+                                                <p>@(postal.AddressLine1 ?? "N/A")</p>
+                                            </div>
+                                            <div class="info-group">
+                                                <label>Address Line 2</label>
+                                                <p>@(postal.AddressLine2 ?? "N/A")</p>
+                                            </div>
+                                            <div class="info-group">
+                                                <label>Province</label>
+                                                <p>@(postal.ProvinceCode ?? "N/A")</p>
+                                            </div>
+                                            <div class="info-group">
+                                                <label>Postal Code</label>
+                                                <p>@(postal.PostalCode ?? "N/A")</p>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+
+                                @if (physical is null && postal is null)
+                                {
+                                    <p class="text-muted">No physical or postal address on record.</p>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-muted">No address information available from CSD.</p>
+                            }
+                        }
+                        else if (activeTab == "banking")
+                        {
+                            <h5 class="card-title mb-4">Banking Details</h5>
+                            @if (profile.Csd?.BankAccounts?.Any() == true)
+                            {
+                                var bank = profile.Csd.BankAccounts.FirstOrDefault(b => b.IsPreferred == true) ?? profile.Csd.BankAccounts.First();
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="info-group">
+                                            <label>Bank Name</label>
+                                            <p>@bank.BankName</p>
+                                        </div>
+                                        <div class="info-group">
+                                            <label>Account Holder</label>
+                                            <p>@bank.AccountHolder</p>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="info-group">
+                                            <label>Account Number</label>
+                                            <p>@bank.AccountNumber</p>
+                                        </div>
+                                        <div class="info-group">
+                                            <label>Branch Code</label>
+                                            <p>@bank.BranchNumber</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-muted">No banking details available.</p>
+                            }
+                        }
+                        else if (activeTab == "tax")
+                        {
+                            <h5 class="card-title mb-4">Tax & B-BBEE Compliance</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">Tax Information</h6>
+                                    <div class="info-group">
+                                        <label>Income Tax Number</label>
+                                        <p>@(profile.Csd?.Tax?.IncomeTaxNumber ?? "N/A")</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>VAT Vendor</label>
+                                        <p>@(profile.Csd?.Tax?.IsVATVendor == true ? "Yes" : "No")</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Tax Clearance Status</label>
+                                        <p>
+                                            @if (profile.Csd?.Tax?.IsValidCertificate == true)
+                                            {
+                                                <span class="badge bg-success">Valid</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">Invalid / Expired</span>
+                                            }
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-muted mb-3">B-BBEE Information</h6>
+                                    <div class="info-group">
+                                        <label>B-BBEE Status</label>
+                                        <p>@(profile.Crm?.BBBEEstatusText ?? profile.Csd?.BBBEE?.StatusLevelOfContributorCode ?? "N/A")</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Black Ownership</label>
+                                        <p>@(profile.Csd?.BBBEE?.BlackOwnership.ToString("0.00") ?? "0")%</p>
+                                    </div>
+                                    <div class="info-group">
+                                        <label>Certificate Expiry</label>
+                                        <p>@(profile.Csd?.BBBEE?.CertificateExpiryDate?.ToString("dd MMM yyyy") ?? "N/A")</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                    </div>
+
+                    <div class="card-footer bg-white border-top-0 text-end">
+                        <button class="btn btn-outline-danger">
+                            <i class="bi bi-pencil me-1"></i> EDIT PROFILE
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string CrsNumber { get; set; } = string.Empty;
+
+    private static readonly System.Globalization.CultureInfo ZaCulture =
+        new("en-ZA");
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    private ContractorFullProfile? profile;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    private string activeTab = "company";
+
+    private void SelectTab(string tab) => activeTab = tab;
+
+    private string IsActive(string tab) => activeTab == tab ? "active" : "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfileAsync();
+    }
+
+    private async Task LoadProfileAsync()
+    {
+        isLoading = true;
+        errorMessage = null;
+
+        try
+        {
+            var element = await Api.GetContractorAsync("234475");
+            profile = element.Deserialize<ContractorFullProfile>(JsonOptions);
+        }
+        catch (IntegratorApiException ex) when (ex.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            errorMessage = "No contractor found with that CRS number.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

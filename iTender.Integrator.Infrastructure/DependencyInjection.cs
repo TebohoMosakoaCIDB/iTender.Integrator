@@ -2,15 +2,16 @@
 using iTender.Integrator.Infrastructure.BackgroundJobs;
 using iTender.Integrator.Infrastructure.Integrations.CRM;
 using iTender.Integrator.Infrastructure.Integrations.CSD;
+using iTender.Integrator.Infrastructure.Integrations.eTenders;
 using iTender.Integrator.Infrastructure.Integrations.Ocds;
 using iTender.Integrator.Infrastructure.Persistence;
 using iTender.Integrator.Infrastructure.Repositories;
+using iTender.Integrator.Infrastructure.Resilience;
 using iTender.Integrator.Infrastructure.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using Microsoft.EntityFrameworkCore;
-using iTender.Integrator.Infrastructure.Resilience;
 
 namespace iTender.Integrator.Infrastructure
 {
@@ -75,6 +76,24 @@ namespace iTender.Integrator.Infrastructure
                 })
                 .AddDefaultResilience(csdTimeoutSeconds);
 
+            // Named client for CsdAuthTokenProvider - deliberately separate from
+            // the ICsdApiClient typed client above so there's no dependency in
+            // either direction between "the client that needs a token" and "the
+            // thing that provides tokens". Same base address/resilience as the
+            // main CSD client since it's hitting the same host.
+            services.AddHttpClient(CsdAuthTokenProvider.CsdAuthHttpClientName, (serviceProvider, client) =>
+            {
+                var options = serviceProvider
+                    .GetRequiredService<IOptions<CsdApiOptions>>()
+                    .Value;
+
+                client.BaseAddress = new Uri(
+                    options.BaseUrl.EndsWith('/') ? options.BaseUrl : options.BaseUrl + "/");
+
+                client.Timeout = Timeout.InfiniteTimeSpan;
+            })
+                .AddDefaultResilience(csdTimeoutSeconds);
+
             //CRM connection
             services.AddOptions<CrmOptions>()
                 .Bind(configuration.GetSection(CrmOptions.SectionName))
@@ -113,6 +132,38 @@ namespace iTender.Integrator.Infrastructure
                 options.UseSqlServer(configuration.GetConnectionString("ItenderIntegrator")));
 
             services.AddScoped<IReleaseRepository, ReleaseRepository>();
+
+            //eTenders Admin API (write side - creates tenders on admin-uat.etenders.gov.za)
+            services.Configure<ETendersAdminApiOptions>(
+                configuration.GetSection(ETendersAdminApiOptions.SectionName));
+
+            var etendersTimeoutSeconds = configuration.GetValue(
+                $"{ETendersAdminApiOptions.SectionName}:TimeoutSeconds", 60);
+
+            services.AddHttpClient<IETendersAdminApiClient, ETendersAdminApiClient>(
+                (serviceProvider, client) =>
+                {
+                    var options = serviceProvider
+                        .GetRequiredService<IOptions<ETendersAdminApiOptions>>()
+                        .Value;
+
+                    client.BaseAddress = new Uri(
+                        options.BaseUrl.EndsWith('/') ? options.BaseUrl : options.BaseUrl + "/");
+
+                    client.Timeout = Timeout.InfiniteTimeSpan;
+                })
+                .AddDefaultResilience(etendersTimeoutSeconds);
+
+            services.AddScoped<ITenderPublishingService, TenderPublishingService>();
+
+            services.AddScoped<IQualifiedContractorFinder, QualifiedContractorFinder>();
+
+            // No gateway configured yet - see LoggingNotificationSender. Swap this
+            // registration for a real email/SMS sender when one exists; nothing
+            // else here needs to change.
+            services.AddScoped<INotificationSender, LoggingNotificationSender>();
+
+            services.AddScoped<IContractorNotificationService, ContractorNotificationService>();
 
             return services;
         }

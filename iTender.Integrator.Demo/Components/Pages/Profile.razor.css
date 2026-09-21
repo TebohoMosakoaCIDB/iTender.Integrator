@@ -1,0 +1,258 @@
+/* Contractor.razor.css */
+
+/* ============================================================
+   Page Shell
+   ============================================================ */
+.profile-container {
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.page-header h2 {
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.page-header p {
+    font-size: 0.9rem;
+}
+
+/* ============================================================
+   Left Sidebar Navigation
+   ============================================================ */
+.profile-nav {
+    position: sticky;
+    top: 1.5rem;
+}
+
+    .profile-nav .list-group-item {
+        border: none;
+        border-radius: 6px !important;
+        margin-bottom: 0.5rem;
+        padding: 0.85rem 1rem;
+        color: #4b5563;
+        font-weight: 500;
+        font-size: 0.9rem;
+        background-color: transparent;
+        transition: all 0.2s ease-in-out;
+        display: flex;
+        align-items: center;
+        text-align: left;
+        width: 100%;
+    }
+
+        .profile-nav .list-group-item i {
+            font-size: 1rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        .profile-nav .list-group-item:hover {
+            background-color: #e5e7eb;
+            color: #111827;
+        }
+
+        .profile-nav .list-group-item.active {
+            background-color: #1e293b;
+            color: #ffffff;
+            border-left: 4px solid #c8102e;
+            font-weight: 600;
+            padding-left: calc(1rem - 4px);
+        }
+
+            .profile-nav .list-group-item.active:hover {
+                background-color: #0f172a;
+                color: #ffffff;
+            }
+
+/* ============================================================
+   Right Content Card
+   ============================================================ */
+.profile-card {
+    border: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-radius: 8px;
+    background-color: #ffffff;
+}
+
+    .profile-card .card-body {
+        padding: 2rem;
+    }
+
+    .profile-card .card-title {
+        font-weight: 600;
+        color: #1e293b;
+        font-size: 1.1rem;
+    }
+
+    .profile-card .card-footer {
+        padding: 1rem 2rem 1.5rem 2rem;
+        background-color: #ffffff;
+        border-top: none;
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+    }
+
+    .profile-card h6.text-muted {
+        font-size: 0.8rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+        color: #6b7280 !important;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+/* ============================================================
+   Info Groups (Label above Value)
+   ============================================================ */
+.info-group {
+    margin-bottom: 1.25rem;
+}
+
+    .info-group label {
+        display: block;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+
+    .info-group p {
+        font-size: 0.95rem;
+        color: #111827;
+        font-weight: 500;
+        margin-bottom: 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        min-height: 1.5rem;
+        word-break: break-word;
+    }
+
+        .info-group p .badge {
+            font-size: 0.75rem;
+            padding: 0.35em 0.65em;
+            font-weight: 600;
+        }
+
+/* ============================================================
+   Directors Table
+   ============================================================ */
+.profile-card .table {
+    margin-bottom: 0;
+    font-size: 0.9rem;
+}
+
+    .profile-card .table thead th {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        font-weight: 700;
+        border-bottom: 2px solid #e5e7eb;
+        border-top: none;
+        padding: 0.75rem 1rem;
+        background-color: #f9fafb;
+        white-space: nowrap;
+    }
+
+    .profile-card .table tbody td {
+        font-size: 0.9rem;
+        color: #374151;
+        vertical-align: middle;
+        padding: 0.9rem 1rem;
+        border-color: #f3f4f6;
+    }
+
+    .profile-card .table tbody tr:hover {
+        background-color: #f9fafb;
+    }
+
+    .profile-card .table .badge {
+        font-size: 0.72rem;
+        padding: 0.35em 0.65em;
+        font-weight: 600;
+    }
+
+/* ============================================================
+   Buttons
+   ============================================================ */
+.btn-outline-danger {
+    border-color: #c8102e;
+    color: #c8102e;
+    font-weight: 600;
+    font-size: 0.85rem;
+    padding: 0.5rem 1.25rem;
+    transition: all 0.2s;
+}
+
+    .btn-outline-danger:hover {
+        background-color: #c8102e;
+        border-color: #c8102e;
+        color: #ffffff;
+    }
+
+/* ============================================================
+   CRS Badge in Header
+   ============================================================ */
+.page-header .badge.bg-primary {
+    background-color: #1e293b !important;
+    font-weight: 600;
+    padding: 0.5em 0.85em;
+    letter-spacing: 0.02em;
+}
+
+/* ============================================================
+   Loading & Error States
+   ============================================================ */
+.spinner-border.text-primary {
+    color: #c8102e !important;
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.alert-danger {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+    border-radius: 8px;
+}
+
+    .alert-danger i {
+        color: #c8102e;
+    }
+
+/* ============================================================
+   Responsive Tweaks
+   ============================================================ */
+@media (max-width: 767.98px) {
+    .profile-container {
+        padding: 1rem;
+    }
+
+    .profile-nav {
+        position: static;
+        margin-bottom: 1.5rem;
+    }
+
+        .profile-nav .list-group-item {
+            font-size: 0.85rem;
+            padding: 0.7rem 0.9rem;
+        }
+
+    .profile-card .card-body {
+        padding: 1.25rem;
+    }
+
+    .profile-card .card-footer {
+        padding: 1rem 1.25rem 1.25rem 1.25rem;
+    }
+
+    .info-group p {
+        font-size: 0.9rem;
+    }
+}

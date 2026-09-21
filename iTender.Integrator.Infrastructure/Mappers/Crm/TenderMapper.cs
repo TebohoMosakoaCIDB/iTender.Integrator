@@ -98,6 +98,80 @@ namespace iTender.Integrator.Infrastructure.Mappers.Crm
             return model;
         }
 
+        // eTenders' own TenderStatus (Published/Closed/Draft) is a different,
+        // smaller vocabulary than our domain TenderStatus (which mirrors OCDS).
+        // Translating through the domain enum first means this reuses the exact
+        // same KnownCrmStatusCodes table above rather than a second, possibly
+        // inconsistent Published/Closed/Draft -> CRM mapping living somewhere else.
+        private static readonly Dictionary<Application.DTOs.ETenders.EtendersTenderStatus, TenderStatus>
+            EtendersToDomainStatus = new()
+            {
+                [Application.DTOs.ETenders.EtendersTenderStatus.Draft] = TenderStatus.Planning,
+                [Application.DTOs.ETenders.EtendersTenderStatus.Published] = TenderStatus.Active,
+                [Application.DTOs.ETenders.EtendersTenderStatus.Closed] = TenderStatus.Complete
+            };
+
+        /// <summary>
+        /// Builds a CreateTenderModel directly from an eTenders create-tender
+        /// request - there is no OCDS Release involved in this path at all (this is
+        /// a brand new tender being created, not an existing one being ingested).
+        /// See the "Deliberately left null" comment below: several fields simply
+        /// can't be resolved here yet, most importantly ProvinceId - eTenders'
+        /// ProvinceId is a small integer in its OWN numbering, not a CRM Guid, and
+        /// there is no confirmed mapping table between the two systems yet (unlike
+        /// the OCDS path, which at least gets a province NAME string to match
+        /// against CRM by name - eTenders' create request gives us no name at all,
+        /// only its own numeric id).
+        /// </summary>
+        public static CreateTenderModel FromETendersCreateRequest(
+            Application.DTOs.ETenders.CreateTenderRequest request,
+            Application.DTOs.ETenders.EtendersTenderResponse? etendersResponse = null)
+        {
+            if (request is null) throw new ArgumentNullException(nameof(request));
+
+            var model = new CreateTenderModel
+            {
+                EmployerTenderNumber = request.TenderNumber,
+                Title = request.Description,
+                Name = request.Description,
+                ClosingDateTime = request.ClosingDate,
+                DocumentsAvailableFrom = request.PublishedDate,
+                Status = EtendersToDomainStatus.GetValueOrDefault(request.TenderStatus),
+                PrimaryAddress = new AddressModel
+                {
+                    Line1 = request.StreetName,
+                    City = request.Town,
+                    PostalCode = request.Code
+                }
+            };
+
+            model.ContactPerson.Add(new ContactForTenderModel
+            {
+                PersonToQuery = request.ContactPerson,
+                MobilePhoneNumber = request.Telephone,
+                TelephoneNumber = request.Telephone,
+                Email = request.Email
+            });
+
+            if (request.BriefingSession)
+            {
+                model.ClarificationMeetingRequired = 100000000;
+                model.ClarificationMeetingCompulsory = request.IsBriefingSessionCompulsory ? 100000000 : 100000001;
+                model.ClarificationMeetingPlace = request.BriefingVenue;
+                model.ClarificationMeetingDateAndTime = request.BriefingSessionDate;
+            }
+
+            // Deliberately left null: ProvinceId (see the doc comment above),
+            // MetroDistrictId, LocalMunicipalityId, ClassOfConstructionWorksId,
+            // SubCategoryId, TenderValueRangeId, EmployerId. eTenders'
+            // TenderCategoryId/CategoriesID/OrganOfStateId are all in eTenders' own
+            // numbering with no confirmed mapping to CRM's equivalents yet - writing
+            // a guess would silently misclassify the tender, so these stay unset
+            // until that mapping exists.
+
+            return model;
+        }
+
         public static Entity ToEntity(CreateTenderModel model, Guid? existingId = null)
         {
             var entity = existingId.HasValue

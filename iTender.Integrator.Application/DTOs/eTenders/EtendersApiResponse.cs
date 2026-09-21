@@ -1,4 +1,4 @@
-﻿namespace iTender.Integrator.Application.DTOs.eTenders
+﻿namespace iTender.Integrator.Application.DTOs.ETenders
 {
     public sealed class EtendersApiResponse
     {

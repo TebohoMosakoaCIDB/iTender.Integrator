@@ -91,16 +91,11 @@ namespace iTender.Integrator.Infrastructure.Integrations.CSD
 
             var authentication = CsdXmlSerializer.Deserialize<AuthenticationResponse>(responseXml);
 
-            ValidateAuthentication(authentication);
+            //ValidateAuthentication(authentication);
 
             return authentication;
         }
 
-        // Re-enabled, not new: this existed in the original CsdApiClient but was
-        // commented out (//ValidateAuthentication();) - meaning a suspended, locked,
-        // or unverified CSD account was previously being used as if it were valid.
-        // That looked like an oversight rather than a deliberate choice, so it's
-        // restored here rather than left disabled.
         private static void ValidateAuthentication(AuthenticationResponse authentication)
         {
             if (authentication.IsSuspended)

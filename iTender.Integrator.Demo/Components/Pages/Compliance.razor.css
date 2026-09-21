@@ -1,0 +1,388 @@
+/* CSS for Compliance component */
+/* Compliance.razor.css */
+
+.compliance-container {
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Page Header */
+.page-header .eyebrow {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: #c8102e;
+    margin-bottom: 0.35rem;
+}
+
+.page-header h1 {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 1.75rem;
+    margin-bottom: 0.35rem;
+}
+
+.page-header p {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-bottom: 0;
+}
+
+/* Search Card */
+.search-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+    .search-card .form-label {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        font-weight: 700;
+        margin-bottom: 0.4rem;
+    }
+
+.search-row {
+    display: flex;
+    gap: 0.75rem;
+}
+
+    .search-row .form-control {
+        flex: 1;
+        border-radius: 6px;
+        border: 1px solid #d1d5db;
+        padding: 0.6rem 0.9rem;
+        font-size: 0.9rem;
+    }
+
+        .search-row .form-control:focus {
+            border-color: #c8102e;
+            box-shadow: 0 0 0 3px rgba(200, 16, 46, 0.1);
+        }
+
+    .search-row .btn {
+        border-radius: 6px;
+        padding: 0.6rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+.btn-danger {
+    background-color: #c8102e;
+    border-color: #c8102e;
+}
+
+    .btn-danger:hover:not(:disabled) {
+        background-color: #a10d26;
+        border-color: #a10d26;
+    }
+
+/* ============================================================
+   Summary Bar
+   ============================================================ */
+.summary-bar {
+    display: flex;
+    align-items: center;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+}
+
+.summary-number {
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 0.35rem;
+    text-align: center;
+}
+
+.summary-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+.summary-divider {
+    width: 1px;
+    height: 2.5rem;
+    background-color: #e5e7eb;
+}
+
+/* ============================================================
+   Status Hero
+   ============================================================ */
+.status-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    border-radius: 8px;
+    padding: 1.5rem 1.75rem;
+    border-left: 5px solid #e5e7eb;
+}
+
+.hero-success {
+    background-color: #ecfdf5;
+    border-left-color: #10b981;
+}
+
+    .hero-success .status-hero-icon {
+        color: #10b981;
+    }
+
+.hero-warning {
+    background-color: #fffbeb;
+    border-left-color: #f59e0b;
+}
+
+    .hero-warning .status-hero-icon {
+        color: #f59e0b;
+    }
+
+.hero-danger {
+    background-color: #fef2f2;
+    border-left-color: #c8102e;
+}
+
+    .hero-danger .status-hero-icon {
+        color: #c8102e;
+    }
+
+.hero-neutral {
+    background-color: #f3f4f6;
+    border-left-color: #9ca3af;
+}
+
+    .hero-neutral .status-hero-icon {
+        color: #6b7280;
+    }
+
+.status-hero-icon {
+    font-size: 2.5rem;
+    flex-shrink: 0;
+}
+
+.status-hero-body h3 {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.status-hero-body p {
+    font-size: 0.9rem;
+    color: #4b5563;
+    margin-bottom: 0;
+}
+
+/* ============================================================
+   Section Title
+   ============================================================ */
+.section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e5e7eb;
+}
+
+/* ============================================================
+   Compliance Cards
+   ============================================================ */
+.compliance-card {
+    display: flex;
+    align-items: flex-start;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid #e5e7eb;
+    transition: box-shadow 0.2s, transform 0.2s;
+    height: 100%;
+}
+
+    .compliance-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        transform: translateY(-1px);
+    }
+
+.card-valid {
+    border-left-color: #10b981;
+}
+
+.card-expired {
+    border-left-color: #c8102e;
+}
+
+.card-icon {
+    font-size: 1.6rem;
+    width: 2.5rem;
+    flex-shrink: 0;
+    text-align: center;
+    margin-top: 0.1rem;
+    color: #475569;
+}
+
+.card-valid .card-icon {
+    color: #10b981;
+}
+
+.card-expired .card-icon {
+    color: #c8102e;
+}
+
+.card-body {
+    flex: 1;
+    padding-left: 0.75rem;
+    min-width: 0;
+}
+
+.card-name {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+}
+
+.card-reference {
+    font-size: 0.78rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+    font-family: 'Courier New', monospace;
+    word-break: break-all;
+}
+
+.card-status {
+    margin-bottom: 0.5rem;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.3em 0.65em;
+    border-radius: 4px;
+}
+
+.badge-valid {
+    background-color: #d1fae5;
+    color: #065f46;
+}
+
+.badge-expired {
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+.card-expiry {
+    font-size: 0.78rem;
+    color: #6b7280;
+    margin-top: 0.35rem;
+}
+
+/* ============================================================
+   CSD Snapshot
+   ============================================================ */
+.profile-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+    .profile-card .card-body {
+        padding: 1.75rem;
+    }
+
+.info-group {
+    margin-bottom: 1.25rem;
+}
+
+    .info-group label {
+        display: block;
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        font-weight: 700;
+        margin-bottom: 0.35rem;
+    }
+
+    .info-group p {
+        font-size: 0.95rem;
+        color: #111827;
+        font-weight: 500;
+        margin-bottom: 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+        min-height: 1.5rem;
+    }
+
+/* ============================================================
+   Loading / Error
+   ============================================================ */
+.spinner-border {
+    color: #c8102e;
+    width: 2.5rem;
+    height: 2.5rem;
+}
+
+.alert-danger {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+    border-radius: 8px;
+}
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 767.98px) {
+    .compliance-container {
+        padding: 1rem;
+    }
+
+    .search-row {
+        flex-direction: column;
+    }
+
+        .search-row .btn {
+            width: 100%;
+        }
+
+    .summary-bar {
+        flex-wrap: wrap;
+        gap: 0.75rem;
+        padding: 1rem;
+    }
+
+    .summary-divider {
+        display: none;
+    }
+
+    .summary-item {
+        flex: 1 0 45%;
+    }
+
+    .status-hero {
+        flex-direction: column;
+        text-align: center;
+    }
+}
