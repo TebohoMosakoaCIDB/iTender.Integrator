@@ -105,6 +105,15 @@ namespace iTender.Integrator.Demo.Services
                 cancellationToken);
         }
 
+        public Task<JsonElement> GetTrackRecordAsync(
+             string crsNumber,             
+            CancellationToken cancellationToken = default)
+        {
+            return GetAsync(
+                $"api/TrackRecords/{Uri.EscapeDataString(crsNumber)}",
+                cancellationToken);
+        }
+
         public Task<JsonElement> GetComplianceSupplierAsync(
             string maaANumber,
             string registrationScheme = "ZA-CSD",

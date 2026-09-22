@@ -1,6 +1,5 @@
 ﻿using iTender.Integrator.Application.DTOs.ETenders;
 using iTender.Integrator.Application.Interfaces;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace iTender.Integrator.Api.Controllers

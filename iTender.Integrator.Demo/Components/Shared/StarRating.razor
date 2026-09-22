@@ -1,0 +1,17 @@
+﻿@* Components/Shared/StarRating.razor *@
+
+<span class="star-rating" title="@Value.ToString("0.0") out of 5">
+    @for (int i = 1; i <= 5; i++)
+    {
+        var filled = Value >= i;
+        var half = !filled && Value >= i - 0.5m;
+        var iconClass = filled ? "bi-star-fill"
+                      : half ? "bi-star-half"
+                      : "bi-star";
+        <i class="bi @iconClass star @(filled || half ? "star-on" : "star-off")"></i>
+    }
+</span>
+
+@code {
+    [Parameter] public decimal Value { get; set; }
+}

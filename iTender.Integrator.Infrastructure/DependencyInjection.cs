@@ -119,6 +119,8 @@ namespace iTender.Integrator.Infrastructure
 
             services.AddScoped<ITenderRepository, TenderRepository>();
 
+            services.AddScoped<ITrackRecordRepository, TrackRecordRepository>();
+
             services.AddScoped<IProvinceRepository, ProvinceRepository>();
 
             services.AddScoped<IMetroDistrictRepository, MetroDistrictRepository>();

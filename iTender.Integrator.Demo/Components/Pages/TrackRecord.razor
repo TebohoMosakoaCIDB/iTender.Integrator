@@ -1,0 +1,263 @@
+﻿@* Components/Pages/TrackRecord.razor *@
+@page "/track-record"
+@rendermode InteractiveServer
+
+@using System.Net
+@using System.Text.Json
+@using iTender.Integrator.Demo.Models
+@using iTender.Integrator.Demo.Services
+
+@inject IntegratorApiClient Api
+@inject ContractorAuthService Auth
+@inject NavigationManager Nav
+
+<PageTitle>Track Record | iBidder</PageTitle>
+
+<div class="track-container">
+
+    @if (!Auth.IsAuthenticated)
+    {
+        <div class="loading-card">
+            <div class="spinner-border"></div>
+            <div>Redirecting to sign in...</div>
+        </div>
+    }
+    else
+    {
+        <div class="page-header mb-4">
+            <div>
+                <div class="eyebrow">Contractor Portal</div>
+                <h1>Track Record</h1>
+                <p>Your company's completed projects and performance history.</p>
+            </div>
+            <div class="crs-chip">
+                <i class="bi bi-hash"></i> @Auth.Current!.CrsNumber
+            </div>
+        </div>
+
+        @if (_loading)
+        {
+            <div class="loading-card">
+                <div class="spinner-border"></div>
+                <div>Loading your track record...</div>
+            </div>
+        }
+        else if (!string.IsNullOrWhiteSpace(_error))
+        {
+            <div class="alert alert-danger">
+                <i class="bi bi-exclamation-triangle me-2"></i>
+                @_error
+                <button class="btn btn-outline-secondary btn-sm ms-3" @onclick="LoadAsync">
+                    <i class="bi bi-arrow-clockwise me-1"></i> Retry
+                </button>
+            </div>
+        }
+        else
+        {
+            <!-- Row 1: Main KPIs -->
+            <div class="kpi-grid mb-3">
+                <div class="kpi-card">
+                    <div class="kpi-icon kpi-navy"><i class="bi bi-check2-circle"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">@_summary.ProjectsCompleted</div>
+                        <div class="kpi-label">Projects Completed</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon kpi-navy"><i class="bi bi-trophy"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">@_summary.ContractsAwarded</div>
+                        <div class="kpi-label">Contracts Awarded</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card">
+                    <div class="kpi-icon kpi-gold"><i class="bi bi-star-fill"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">
+                            @_summary.AveragePerformance.ToString("0.0")<span class="kpi-unit">★</span>
+                        </div>
+                        <div class="kpi-label">Average Performance</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: Secondary stats -->
+            <div class="kpi-grid kpi-grid-sm mb-4">
+                <div class="kpi-card kpi-mini">
+                    <div class="kpi-icon kpi-grey"><i class="bi bi-file-earmark-text"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">@_summary.ClaimsRaised</div>
+                        <div class="kpi-label">Claims Raised</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card kpi-mini">
+                    <div class="kpi-icon kpi-grey"><i class="bi bi-shield-exclamation"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">@_summary.Disputes</div>
+                        <div class="kpi-label">Disputes</div>
+                    </div>
+                </div>
+
+                <div class="kpi-card kpi-mini">
+                    <div class="kpi-icon kpi-grey"><i class="bi bi-heart-pulse"></i></div>
+                    <div class="kpi-body">
+                        <div class="kpi-value">@_summary.SafetyIncidents</div>
+                        <div class="kpi-label">Safety Incidents</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recently Completed Projects -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div>
+                        <h2>Recently Completed Projects</h2>
+                        <p>@_records.Count project@(_records.Count == 1 ? "" : "s") on record</p>
+                    </div>
+                </div>
+
+                @if (_records.Count == 0)
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-inbox"></i>
+                        <p>No completed projects on record yet.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="track-table">
+                            <thead>
+                                <tr>
+                                    <th>Project</th>
+                                    <th>Client</th>
+                                    <th class="text-end">Value (Incl. VAT)</th>
+                                    <th>Completed</th>
+                                    <th>Performance</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var record in _records.OrderByDescending(r => r.CompletedOn ?? DateTime.MinValue))
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="project-title">@(record.Title ?? "Untitled Project")</div>
+                                            @if (!string.IsNullOrEmpty(record.Reference))
+                                            {
+                                                <div class="project-ref">@record.Reference</div>
+                                            }
+                                        </td>
+                                        <td>@(record.Client ?? record.EmployerText ?? "—")</td>
+                                        <td class="text-end fw-semibold">
+                                            @FormatCurrency(record.ContractorShareInclVat ?? record.Value)
+                                        </td>
+                                        <td>@(record.CompletedOn?.ToString("MMM yyyy") ?? "—")</td>
+                                        <td>
+                                            <StarRating Value="record.PerformanceStars" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private bool _loading = true;
+    private string? _error;
+
+    private List<iTender.Integrator.Demo.Models.TrackRecord> _records = new();
+    private TrackRecordSummary _summary = new();
+
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true
+    };
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        await Auth.RestoreAsync();
+        if (!Auth.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        StateHasChanged();
+        await LoadAsync();
+        StateHasChanged();
+    }
+
+    private async Task LoadAsync()
+    {
+        _loading = true;
+        _error = null;
+
+        try
+        {
+            var element = await Api.GetTrackRecordAsync(Auth.Current!.CrsNumber);
+
+            // The API may return a bare array or a wrapped object. Handle both.
+            if (element.ValueKind == JsonValueKind.Array)
+            {
+                _records = element.Deserialize<List<iTender.Integrator.Demo.Models.TrackRecord>>(JsonOptions) ?? new();
+            }
+            else
+            {
+                _records = element.TryGetProperty("items", out var items)
+                    ? items.Deserialize<List<iTender.Integrator.Demo.Models.TrackRecord>>(JsonOptions) ?? new()
+                    : new List<iTender.Integrator.Demo.Models.TrackRecord>();
+            }
+
+            _summary = ComputeSummary(_records);
+        }
+        catch (IntegratorApiException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            _records = new();
+            _summary = new();
+        }
+        catch (Exception ex)
+        {
+            _error = $"Failed to load track record: {ex.Message}";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static TrackRecordSummary ComputeSummary(List<iTender.Integrator.Demo.Models.TrackRecord> records)
+    {
+        if (records.Count == 0) return new TrackRecordSummary();
+
+        var completed = records.Count(r => r.CompletedOn.HasValue /* completed */ || r.StateCode is null);
+        var avgPerf = records.Any(r => r.PerformanceScore.HasValue)
+            ? records.Where(r => r.PerformanceScore.HasValue)
+                     .Average(r => r.PerformanceScore!.Value)
+            : records.Average(r => r.PerformanceStars);
+
+        return new TrackRecordSummary
+        {
+            ProjectsCompleted = completed,
+            ContractsAwarded = records.Count,
+            AveragePerformance = Math.Round(avgPerf, 1),
+            ClaimsRaised = 0,       // wire up when you have a claims endpoint
+            Disputes = 0,           // wire up when you have a disputes field
+            SafetyIncidents = 0     // wire up when you have a safety field
+        };
+    }
+
+    private static string FormatCurrency(decimal? value) =>
+        value.HasValue
+            ? value.Value.ToString("C0", new System.Globalization.CultureInfo("en-ZA"))
+            : "—";
+}

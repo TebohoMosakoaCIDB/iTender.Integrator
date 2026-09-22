@@ -1,0 +1,279 @@
+/* CSS for TrackRecord component */
+/* TrackRecord.razor.css */
+
+.track-container {
+    padding: 1.5rem;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+/* Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+    .page-header .eyebrow {
+        font-size: 0.72rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 700;
+        color: #c8102e;
+        margin-bottom: 0.35rem;
+    }
+
+    .page-header h1 {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 1.6rem;
+        margin-bottom: 0.35rem;
+    }
+
+    .page-header p {
+        font-size: 0.9rem;
+        color: #6b7280;
+        margin-bottom: 0;
+    }
+
+.crs-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background-color: #e5e7eb;
+    color: #374151;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.4em 0.75em;
+    border-radius: 999px;
+    font-family: 'Courier New', monospace;
+}
+
+/* ============================================================
+   KPI Grid
+   ============================================================ */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.kpi-grid-sm {
+    gap: 0.75rem;
+}
+
+.kpi-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.kpi-mini {
+    padding: 1rem 1.15rem;
+}
+
+.kpi-icon {
+    width: 3rem;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: #ffffff;
+    font-size: 1.35rem;
+    flex-shrink: 0;
+}
+
+.kpi-mini .kpi-icon {
+    width: 2.4rem;
+    height: 2.4rem;
+    font-size: 1.1rem;
+}
+
+.kpi-navy {
+    background-color: #1e293b;
+}
+
+.kpi-gold {
+    background-color: #f59e0b;
+}
+
+.kpi-grey {
+    background-color: #94a3b8;
+}
+
+.kpi-body {
+    min-width: 0;
+}
+
+.kpi-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+}
+
+.kpi-mini .kpi-value {
+    font-size: 1.35rem;
+}
+
+.kpi-unit {
+    font-size: 0.9rem;
+    color: #f59e0b;
+    margin-left: 0.15rem;
+}
+
+.kpi-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #6b7280;
+    font-weight: 600;
+}
+
+/* ============================================================
+   Section / Table
+   ============================================================ */
+.section-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+    .section-header h2 {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.15rem;
+    }
+
+    .section-header p {
+        font-size: 0.82rem;
+        color: #6b7280;
+        margin-bottom: 0;
+    }
+
+.track-table {
+    width: 100%;
+    margin-bottom: 0;
+    font-size: 0.88rem;
+}
+
+    .track-table thead th {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #6b7280;
+        font-weight: 700;
+        border-bottom: 2px solid #e5e7eb;
+        border-top: none;
+        padding: 0.75rem 0.85rem;
+        background-color: #f9fafb;
+        white-space: nowrap;
+    }
+
+    .track-table tbody td {
+        font-size: 0.88rem;
+        color: #374151;
+        vertical-align: middle;
+        padding: 0.9rem 0.85rem;
+        border-color: #f3f4f6;
+    }
+
+    .track-table tbody tr:hover {
+        background-color: #f9fafb;
+    }
+
+.project-title {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.1rem;
+}
+
+.project-ref {
+    font-size: 0.75rem;
+    color: #6b7280;
+    font-family: 'Courier New', monospace;
+}
+
+/* ============================================================
+   Loading / Error
+   ============================================================ */
+.loading-card {
+    background-color: #ffffff;
+    border-radius: 8px;
+    padding: 2.5rem;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.spinner-border {
+    color: #c8102e;
+    width: 2.5rem;
+    height: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.alert-danger {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #991b1b;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #9ca3af;
+}
+
+    .empty-state i {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .empty-state p {
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+/* ============================================================
+   Responsive
+   ============================================================ */
+@media (max-width: 991.98px) {
+    .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 575.98px) {
+    .track-container {
+        padding: 1rem;
+    }
+
+    .kpi-grid,
+    .kpi-grid-sm {
+        grid-template-columns: 1fr;
+    }
+}

@@ -15,11 +15,6 @@ namespace iTender.Integrator.Api.Controllers
             _notificationService = notificationService;
         }
 
-        // Deliberately a separate, explicit call - never triggered automatically
-        // by tender creation/publishing. Until a real gateway is wired in
-        // (INotificationSender), every outcome will report Sent=false with a
-        // "logged only" reason - the value right now is the matching itself
-        // (who WOULD be notified), which the response is honest about.
         [HttpPost("qualified-contractors")]
         public async Task<IActionResult> NotifyQualifiedContractors(
             [FromBody] NotifyQualifiedContractorsRequest request,
