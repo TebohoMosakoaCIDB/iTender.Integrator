@@ -15,7 +15,8 @@ namespace iTender.Integrator.Infrastructure.Repositories
         {
             _crmServiceFactory = crmServiceFactory;
         }
-        public IEnumerable<TrackRecordModel> GetByCrsNumberAsync(string contractorCrs)
+
+        public async Task<IReadOnlyCollection<TrackRecordModel>> GetByCrsNumberAsync(string crsNumber, CancellationToken cancellationToken = default)
         {
             var query = new QueryExpression(TrackRecordMapper.EntityName) // "nv_trackrecord"
             {
@@ -33,7 +34,7 @@ namespace iTender.Integrator.Infrastructure.Repositories
             query.Criteria.AddCondition(
                 TrackRecordMapper.Fields.ContractorCrsNumber,
                 ConditionOperator.Equal,
-                contractorCrs);
+                crsNumber);
 
             // Exclude inactive records
             query.Criteria.AddCondition(

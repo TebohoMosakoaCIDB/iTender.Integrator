@@ -1,78 +1,96 @@
 ﻿@* NavMenu.razor *@
 @inject iTender.Integrator.Demo.Services.ContractorAuthService Auth
 @inject NavigationManager Nav
+@implements IDisposable
 
-<div class="top-row ps-3 navbar navbar-dark bg-dark">
+@inject NavigationManager NavigationManager
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">
-            <i class="bi bi-buildings me-2"></i> cidb
+        <a class="navbar-brand" href="" hidden>
+            iTender.Compliance.Client
         </a>
-        
     </div>
 </div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
+<input type="checkbox"
+       title="Navigation menu"
+       class="navbar-toggler" />
 
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
+<div class="nav-scrollable"
+     onclick="document.querySelector('.navbar-toggler').click()">
     <nav class="nav flex-column">
-
+        <div class="nav-item px-3 mb-3">
+            <img src="/cidb-logo.png"
+                 style="width:15em" />
+        </div>
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                <i class="bi bi-speedometer2"></i>
+                <span>Dashboard</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="profile/{CrsNumber}">
-                <i class="bi bi-person-badge me-2"></i> My Profile
+                <i class="bi bi-person-badge"></i>
+                <span>My Profile</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="opportunities">
-                <i class="bi bi-briefcase me-2"></i> Opportunities
+                <i class="bi bi-briefcase"></i>
+                <span>Opportunities</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="bids">
-                <i class="bi bi-file-earmark-text me-2"></i> My Bids
+                <i class="bi bi-file-earmark-text"></i>
+                <span>My Bids</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="contracts">
-                <i class="bi bi-file-earmark-check me-2"></i> Contracts
+                <i class="bi bi-file-earmark-check"></i>
+                <span>Contracts</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="compliance">
-                <i class="bi bi-shield-check me-2"></i> Compliance
+                <i class="bi bi-shield-check"></i>
+                <span>Compliance</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="track-record">
-                <i class="bi bi-graph-up-arrow me-2"></i> Track Record
+                <i class="bi bi-graph-up-arrow"></i>
+                <span>Track Record</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="documents">
-                <i class="bi bi-folder me-2"></i> Documents
+                <i class="bi bi-folder"></i>
+                <span>Documents</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="notifications">
-                <i class="bi bi-bell me-2"></i> Notifications
+                <i class="bi bi-bell"></i>
+                <span>Notifications</span>
             </NavLink>
         </div>
 
         <div class="nav-item px-3">
             <NavLink class="nav-link" href="help">
-                <i class="bi bi-question-circle me-2"></i> Help & Support
+                <i class="bi bi-question-circle"></i>
+                <span>Help & Support</span>
             </NavLink>
         </div>
 
@@ -95,10 +113,39 @@
     </nav>
 </div>
 
-@code {
+
+@code
+{
+    private string? currentUrl;
+
+    protected override void OnInitialized()
+    {
+        currentUrl =
+            NavigationManager.ToBaseRelativePath(
+                NavigationManager.Uri);
+
+        NavigationManager.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(
+        object? sender,
+        LocationChangedEventArgs e)
+    {
+        currentUrl =
+            NavigationManager.ToBaseRelativePath(
+                e.Location);
+
+        StateHasChanged();
+    }
+
     private async Task SignOut()
     {
         await Auth.LogoutAsync();
         Nav.NavigateTo("/login", replace: true);
+    }
+
+    public void Dispose()
+    {
+        NavigationManager.LocationChanged -= OnLocationChanged;
     }
 }

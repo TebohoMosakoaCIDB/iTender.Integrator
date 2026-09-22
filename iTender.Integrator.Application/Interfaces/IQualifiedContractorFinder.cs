@@ -6,6 +6,7 @@ namespace iTender.Integrator.Application.Interfaces
     {
         Task<IReadOnlyCollection<ContractorModel>> FindQualifiedContractorsAsync(
             Guid? provinceId,
+            Guid? classOfWorkTypeId,
             string? requiredGradingDesignationContains,
             CancellationToken cancellationToken = default);
     }

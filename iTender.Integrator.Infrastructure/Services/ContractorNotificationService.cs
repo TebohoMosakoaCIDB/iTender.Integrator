@@ -22,13 +22,14 @@ namespace iTender.Integrator.Infrastructure.Services
 
         public async Task<NotifyQualifiedContractorsResult> NotifyQualifiedContractorsAsync(
             Guid? provinceId,
+            Guid? classOfWorkTypeId,
             string? requiredGradingDesignationContains,
             string subject,
             string message,
             CancellationToken cancellationToken = default)
         {
             var qualified = await _finder.FindQualifiedContractorsAsync(
-                provinceId, requiredGradingDesignationContains, cancellationToken);
+                provinceId, classOfWorkTypeId, requiredGradingDesignationContains, cancellationToken);
 
             var outcomes = new List<ContractorNotificationOutcome>(qualified.Count);
 

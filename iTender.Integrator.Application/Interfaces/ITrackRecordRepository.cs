@@ -4,6 +4,7 @@ namespace iTender.Integrator.Application.Interfaces
 {
     public interface ITrackRecordRepository
     {
-        IEnumerable<TrackRecordModel> GetByCrsNumberAsync(string contractorCsd);
+        Task<IReadOnlyCollection<TrackRecordModel>> GetByCrsNumberAsync(
+            string crsNumber, CancellationToken cancellationToken = default);
     }
 }

@@ -6,6 +6,7 @@ namespace iTender.Integrator.Application.Interfaces
     {
         Task<NotifyQualifiedContractorsResult> NotifyQualifiedContractorsAsync(
             Guid? provinceId,
+            Guid? classOfWorkTypeId,
             string? requiredGradingDesignationContains,
             string subject,
             string message,

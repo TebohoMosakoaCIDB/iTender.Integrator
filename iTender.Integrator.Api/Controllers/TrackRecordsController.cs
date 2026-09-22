@@ -1,5 +1,4 @@
 ﻿using iTender.Integrator.Application.Interfaces;
-using iTender.Integrator.Infrastructure.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace iTender.Integrator.Api.Controllers
@@ -21,9 +20,13 @@ namespace iTender.Integrator.Api.Controllers
             if (string.IsNullOrWhiteSpace(crsNumber))
                 return BadRequest("CRS number is required.");
 
-            var profile = _trackRecordRepository.GetByCrsNumberAsync(crsNumber);
+            // Was: `var profile = _trackRecordRepository.GetByCrsNumberAsync(crsNumber);`
+            // - missing await, so `profile` held a Task<T> (always non-null,
+            // "success" looking) rather than the actual result, and the
+            // cancellationToken parameter was never passed through at all.
+            var records = await _trackRecordRepository.GetByCrsNumberAsync(crsNumber, cancellationToken);
 
-            return Ok(profile);
+            return Ok(records);
         }
     }
 }

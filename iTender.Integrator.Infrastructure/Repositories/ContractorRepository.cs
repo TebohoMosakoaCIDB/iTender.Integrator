@@ -1,7 +1,6 @@
 ﻿using iTender.Integrator.Application.DTOs.Crm;
 using iTender.Integrator.Application.Interfaces;
 using iTender.Integrator.Domain.Constants;
-using iTender.Integrator.Domain.Entities;
 using iTender.Integrator.Infrastructure.Integrations.CRM;
 using iTender.Integrator.Infrastructure.Mappers.Crm;
 using Microsoft.Xrm.Sdk.Query;
@@ -65,9 +64,11 @@ namespace iTender.Integrator.Infrastructure.Repositories
             var entity = result.Entities.FirstOrDefault();
             var model = entity is null ? null : ContractorMapper.ToDomain(entity);
 
-            PopulateAnnualTurnoverAndAvailableCapital(model);
-
-            model?.Grades = GetContractorGrades(model.Id).ToList();
+            if (model is not null)
+            {
+                PopulateAnnualTurnoverAndAvailableCapital(model);
+                model.Grades = GetContractorGrades(model.Id).ToList();
+            }
 
             return Task.FromResult(model);
         }
